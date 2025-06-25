@@ -4,6 +4,7 @@ import { cva } from "class-variance-authority"
 import { ChevronDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { SAMPLE_PATHS } from "@/utils/paths" // <-- Import your paths
 
 const NavigationMenu = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Root>,
@@ -115,6 +116,31 @@ const NavigationMenuIndicator = React.forwardRef<
 NavigationMenuIndicator.displayName =
   NavigationMenuPrimitive.Indicator.displayName
 
+// --- Add the Paths dropdown menu here ---
+const PathsMenu = ({ onSelect }: { onSelect?: (pathName: string) => void }) => (
+  <NavigationMenuItem>
+    <NavigationMenuTrigger>Paths</NavigationMenuTrigger>
+    <NavigationMenuContent>
+      <ul className="min-w-[220px] p-2">
+        {SAMPLE_PATHS.map((path) => (
+          <li key={path.name}>
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-accent rounded"
+              onClick={() => onSelect?.(path.name)}
+              type="button"
+            >
+              <span className="font-semibold">{path.name}</span>
+              <br />
+              <span className="text-xs text-muted-foreground">{path.description}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </NavigationMenuContent>
+  </NavigationMenuItem>
+)
+
+// --- Export everything as before, plus PathsMenu ---
 export {
   navigationMenuTriggerStyle,
   NavigationMenu,
@@ -125,4 +151,6 @@ export {
   NavigationMenuLink,
   NavigationMenuIndicator,
   NavigationMenuViewport,
+  PathsMenu, // <-- Export the new PathsMenu
 }
+
