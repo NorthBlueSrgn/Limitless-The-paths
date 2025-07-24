@@ -1,28 +1,33 @@
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-orbitron: "Orbitron", monospace;
+}
+
 @layer base {
   :root {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 271.5 81.3% 55.9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 271.5 81.3% 55.9%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
     --radius: 0.75rem;
   }
 }
@@ -33,28 +38,85 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: radial-gradient(ellipse at top, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
-      linear-gradient(180deg, #000000 0%, #0a0a0a 100%);
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
     min-height: 100vh;
   }
 }
 
+/* Custom Styles */
 .glass-card {
-  @apply bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  @apply bg-black/20 backdrop-blur-sm border border-white/10;
 }
 
 .neon-glow {
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
 }
 
 .rank-glow {
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
 }
 
-.attribute-glow {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+.chapter-title {
+  background: linear-gradient(45deg, #8b5cf6, #3b82f6, #06b6d4);
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.manga-text {
+  font-family: var(--font-orbitron), monospace;
+  letter-spacing: 0.025em;
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+.decay-warning {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.rank-aura {
+  position: relative;
+  overflow: hidden;
+}
+
+.rank-aura::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+  animation: spin 3s linear infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  from {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+  }
 }
 
 @keyframes float {
@@ -67,116 +129,26 @@
   }
 }
 
-.float-animation {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
-  }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-@keyframes particle-float {
-  0% {
-    transform: translateY(0px) translateX(0px);
-    opacity: 0.3;
-  }
-  33% {
-    transform: translateY(-20px) translateX(10px);
-    opacity: 0.6;
-  }
-  66% {
-    transform: translateY(-10px) translateX(-5px);
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateY(0px) translateX(0px);
-    opacity: 0.3;
-  }
-}
-
-.particle-animation {
-  animation: particle-float 8s ease-in-out infinite;
-}
-
-.font-orbitron {
-  font-family: var(--font-orbitron);
-}
-
-.font-inter {
-  font-family: var(--font-inter);
-}
-
-.soul-node {
-  transition: all 0.3s ease;
-}
-
-.soul-node:hover {
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.8));
-}
-
-.decay-warning {
-  animation: pulse 2s infinite;
-}
-
-@keyframes xp-gain {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.xp-animation {
-  animation: xp-gain 0.5s ease-out;
-}
-
-.manga-text {
-  font-weight: 500;
-  line-height: 1.7;
-  letter-spacing: 0.02em;
-}
-
-.chapter-title {
-  background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.rank-aura {
-  position: relative;
-}
-
-.rank-aura::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  background: conic-gradient(from 0deg, transparent, rgba(139, 92, 246, 0.3), transparent);
-  border-radius: 50%;
-  animation: spin 3s linear infinite;
-  z-index: -1;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
 }

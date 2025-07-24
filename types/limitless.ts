@@ -1,108 +1,146 @@
-export interface User {
-  id: string
-  name: string
-  rank: Rank
-  level: number
-  xp: number
-  xpToNext: number
-  attributes: Attributes
-  activePaths: string[]
-  completedTasks: number
-  totalTasks: number
-  streak: number
-  joinDate: string
-  lastActive: string
-}
-
-export interface Attributes {
-  spiritual: number
-  physical: number
-  health: number
-  intelligence: number
-  creativity: number
-  resilience: number
-}
-
 export type Rank = "E" | "D" | "C" | "B" | "A" | "S" | "SS" | "SSS"
 
-export interface Task {
+export interface UserProfile {
   id: string
-  title: string
+  username: string
+  email: string
+  rank: Rank
+  level: number
+  totalXP: number
+  currentXP: number
+  nextRankXP: number
+  joinDate: string
+  lastActive: string
+  streak: number
+  title?: string
+  aura?: string
+}
+
+export interface Attribute {
+  name: string
+  value: number
+  maxValue: number
+  rank: Rank
+  xpGained: number
+  decayRate: number
+  lastUpdated: string
+  color: string
+}
+
+export interface SoulTrait {
+  id: string
+  name: string
   description: string
-  category: string
-  difficulty: "Easy" | "Medium" | "Hard" | "Extreme"
-  xpReward: number
-  attributeRewards: Partial<Attributes>
-  completed: boolean
-  dueDate?: string
-  pathId?: string
+  unlocked: boolean
+  level: number
+  prerequisites: string[]
+  effects: string[]
+  color: string
+  position: { x: number; y: number }
 }
 
 export interface Path {
   id: string
   name: string
-  archetype: string
   description: string
-  philosophy: string
-  stages: PathStage[]
-  currentStage: number
+  category: string
+  difficulty: "Beginner" | "Intermediate" | "Advanced" | "Master"
   isActive: boolean
-  color: string
+  progress: number
+  maxProgress: number
+  currentStage: string
+  nextStage: string
+  associatedAttributes: string[]
+  rewards: PathReward[]
+  decayRate: number
+  lastActivity: string
+  archetype: string
 }
 
-export interface PathStage {
+export interface PathReward {
+  type: "XP" | "Attribute" | "Title" | "Trait"
+  value: number
+  target?: string
+}
+
+export interface DailyTask {
   id: string
-  name: string
+  title: string
   description: string
-  requirements: string[]
-  rewards: string[]
-  unlocked: boolean
+  category: string
+  difficulty: "Easy" | "Medium" | "Hard"
+  xpReward: number
+  attributeRewards: { [key: string]: number }
+  pathId?: string
+  completed: boolean
+  timeEstimate: number
+  deadline?: string
+  type: "daily" | "weekly" | "challenge"
 }
 
 export interface StoryChapter {
   id: string
   title: string
   content: string
-  tone: "light" | "dark" | "neutral" | "ascension"
+  chapterNumber: number
   unlocked: boolean
-  dateUnlocked?: string
+  completed: boolean
+  themes: string[]
+  requiredTaskCompletion: number
+  rewards: PathReward[]
+  imageUrl?: string
+  tone: "light" | "neutral" | "dark" | "ascension"
   characterMoments: string[]
-  choices?: StoryChoice[]
 }
 
-export interface StoryChoice {
+export interface JournalEntry {
   id: string
-  text: string
-  consequence: string
-  attributeEffect?: Partial<Attributes>
-}
-
-export interface AIMessage {
-  id: string
+  title: string
   content: string
-  type: "user" | "assistant"
-  timestamp: string
-  category?: "task" | "story" | "guidance" | "analysis" | "challenge" | "philosophy"
+  date: string
+  mood: string[]
+  tags: string[]
+  season: string
+  type: "Reflection" | "Breakthrough" | "Setback" | "Philosophy" | "Goal" | "Rival Event"
+  linkedPaths: string[]
+  xpGained: number
+  storyImpact?: string
 }
 
 export interface HunterExam {
   id: string
   name: string
   description: string
-  requirements: string[]
-  trials: Trial[]
-  rewards: string[]
+  targetRank: Rank
+  phases: ExamPhase[]
+  rewards: PathReward[]
   unlocked: boolean
   completed: boolean
+  attempts: number
+  bestScore: number
+  duration: number
+  intensity: "Standard" | "Intense" | "Extreme"
 }
 
-export interface Trial {
+export interface ExamPhase {
   id: string
   name: string
+  type: "Task" | "Reflection" | "Challenge" | "Quiz" | "Endurance"
   description: string
-  type: "endurance" | "mental" | "spiritual" | "creative"
-  duration: string
+  requirements: string[]
+  timeLimit?: number
   completed: boolean
+  score?: number
+}
+
+export interface DecayMetric {
+  pathId: string
+  pathName: string
+  currentDecay: number
+  maxDecay: number
+  lastActivity: string
+  riskLevel: "Low" | "Medium" | "High" | "Critical"
+  recommendations: string[]
 }
 
 export interface Chronicle {
@@ -110,7 +148,9 @@ export interface Chronicle {
   title: string
   content: string
   date: string
-  mood: string
-  tags: string[]
+  type: "Journal" | "Story Response" | "Mindset Shift" | "Arc Reflection"
   linkedChapter?: string
+  mood: string
+  insights: string[]
+  orderAnalysis?: string
 }
