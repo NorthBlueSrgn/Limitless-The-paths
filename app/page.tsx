@@ -10,55 +10,66 @@ import { useLimitlessData } from "@/hooks/use-limitless-data"
 
 export default function LimitlessApp() {
   const [activeTab, setActiveTab] = useState("dashboard")
-  const { userProfile } = useLimitlessData()
+  const { user, tasks, paths, currentChapter, aiMessages, completeTask, activatePath, deactivatePath, addAIMessage } =
+    useLimitlessData()
 
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />
+        return <Dashboard user={user} tasks={tasks} paths={paths} onCompleteTask={completeTask} />
       case "chapter-black":
-        return <ChapterBlack />
+        return <ChapterBlack currentChapter={currentChapter} user={user} />
       case "paths":
-        return <Paths />
+        return <Paths paths={paths} user={user} onActivatePath={activatePath} onDeactivatePath={deactivatePath} />
       case "the-order":
-        return <TheOrder />
+        return <TheOrder messages={aiMessages} onSendMessage={addAIMessage} />
       case "inner-core":
         return (
-          <div className="text-center py-12 text-gray-400">
-            <h2 className="text-2xl font-bold mb-4">Inner Core</h2>
-            <p>Your evolution database - coming soon...</p>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-orbitron">Inner Core</h2>
+              <p className="text-muted-foreground">Coming Soon</p>
+            </div>
           </div>
         )
       case "hunter-exam":
         return (
-          <div className="text-center py-12 text-gray-400">
-            <h2 className="text-2xl font-bold mb-4">Hunter Exam</h2>
-            <p>Rank ascension trials - coming soon...</p>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-orbitron">Hunter Exam</h2>
+              <p className="text-muted-foreground">Coming Soon</p>
+            </div>
           </div>
         )
       case "advanced-stats":
         return (
-          <div className="text-center py-12 text-gray-400">
-            <h2 className="text-2xl font-bold mb-4">Advanced Stats</h2>
-            <p>Deep performance analytics - coming soon...</p>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-orbitron">Advanced Stats</h2>
+              <p className="text-muted-foreground">Coming Soon</p>
+            </div>
           </div>
         )
       case "chronicles":
         return (
-          <div className="text-center py-12 text-gray-400">
-            <h2 className="text-2xl font-bold mb-4">Chronicles</h2>
-            <p>Your journey journal - coming soon...</p>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-orbitron">Chronicles</h2>
+              <p className="text-muted-foreground">Coming Soon</p>
+            </div>
           </div>
         )
       default:
-        return <Dashboard />
+        return null
     }
   }
 
   return (
-    <div className="min-h-screen">
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} userProfile={userProfile} />
-      <main className="ml-80 p-6">{renderContent()}</main>
+    <div className="min-h-screen bg-background">
+      <div className="flex">
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} user={user} />
+        <main className="flex-1 p-6">{renderContent()}</main>
+      </div>
     </div>
   )
 }

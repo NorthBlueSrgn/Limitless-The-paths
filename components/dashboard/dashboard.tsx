@@ -1,255 +1,206 @@
 "use client"
 
-import type React from "react"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
-import { Crown, Target, Flame, Star, BookOpen, CheckCircle2, Circle } from "lucide-react"
-import { useLimitlessData } from "@/hooks/use-limitless-data"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Target, Zap, TrendingUp, Calendar, Flame, Star } from "lucide-react"
+import type { User, Task, Path } from "@/types/limitless"
 
-export function Dashboard() {
-  const { userProfile, attributes, soulTraits, activePaths, dailyTasks, storyChapters, completeTask } =
-    useLimitlessData()
+interface DashboardProps {
+  user: User
+  tasks: Task[]
+  paths: Path[]
+  onCompleteTask: (taskId: string) => void
+}
 
-  const completedTasks = dailyTasks.filter((task) => task.completed).length
-  const totalTasks = dailyTasks.length
-  const taskCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+const attributeIcons = {
+  spiritual: "🧘",
+  physical: "💪",
+  health: "❤️",
+  intelligence: "🧠",
+  creativity: "🎨",
+  resilience: "🛡️",
+}
 
-  const currentChapter = storyChapters.find((chapter) => !chapter.completed) || storyChapters[0]
+const difficultyColors = {
+  Easy: "bg-green-500/20 text-green-400 border-green-500/30",
+  Medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  Hard: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  Extreme: "bg-red-500/20 text-red-400 border-red-500/30",
+}
 
-  const handleTaskComplete = (taskId: string) => {
-    completeTask(taskId)
-  }
+export function Dashboard({ user, tasks, paths, onCompleteTask }: DashboardProps) {
+  const activePaths = paths.filter((path) => user.activePaths.includes(path.id))
+  const completionRate = (user.completedTasks / user.totalTasks) * 100
+  const todaysTasks = tasks.filter((task) => !task.completed)
+  const completedToday = tasks.filter((task) => task.completed).length
 
   return (
     <div className="space-y-6">
-      {/* Hero Section */}
-      <div className="text-center space-y-4 mb-8">
-        <h1 className="font-orbitron text-5xl font-bold chapter-title">LIMITLESS: CHAPTER BLACK</h1>
-        <p className="text-gray-400 text-lg manga-text">Your transformation begins in the shadows of potential</p>
-      </div>
-
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="glass-card pulse-glow">
-          <CardContent className="p-6 text-center">
-            <div className="rank-aura w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-              <Crown className="h-8 w-8 text-white float-animation" />
-            </div>
-            <div className="font-orbitron text-4xl font-bold text-purple-400 rank-glow mb-2">{userProfile.rank}</div>
-            <div className="text-gray-400 text-sm font-medium">Current Rank</div>
-            <div className="text-xs text-purple-300 mt-1">{userProfile.title}</div>
-          </CardContent>
-        </Card>
-
+      {/* Header Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="glass-card">
-          <CardContent className="p-6 text-center">
-            <Target className="h-12 w-12 mx-auto mb-4 text-purple-400" />
-            <div className="text-4xl font-bold text-purple-400 mb-2">{Math.round(taskCompletionRate)}%</div>
-            <div className="text-gray-400 text-sm font-medium">Daily Progress</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {completedTasks}/{totalTasks} tasks complete
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-primary/20">
+                <Target className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completion Rate</p>
+                <p className="text-2xl font-bold">{completionRate.toFixed(1)}%</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-6 text-center">
-            <Flame className="h-12 w-12 mx-auto mb-4 text-orange-400" />
-            <div className="text-4xl font-bold text-orange-400 mb-2">{userProfile.streak}</div>
-            <div className="text-gray-400 text-sm font-medium">Day Streak</div>
-            <div className="text-xs text-gray-500 mt-1">Consistency is power</div>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Zap className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Current XP</p>
+                <p className="text-2xl font-bold">{user.xp}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-6 text-center">
-            <Star className="h-12 w-12 mx-auto mb-4 text-yellow-400" />
-            <div className="text-4xl font-bold text-yellow-400 mb-2">{userProfile.totalXP}</div>
-            <div className="text-gray-400 text-sm font-medium">Total XP</div>
-            <div className="text-xs text-gray-500 mt-1">Level {userProfile.level}</div>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <Flame className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Streak</p>
+                <p className="text-2xl font-bold">{user.streak} days</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <TrendingUp className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Active Paths</p>
+                <p className="text-2xl font-bold">{user.activePaths.length}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Progress to Next Rank */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Attribute Wheel */}
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5" />
+              Attribute Progression
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(user.attributes).map(([key, value]) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium capitalize flex items-center gap-2">
+                      <span>{attributeIcons[key as keyof typeof attributeIcons]}</span>
+                      {key}
+                    </span>
+                    <span className="text-sm font-bold">{value}</span>
+                  </div>
+                  <Progress value={value} className="h-2" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Active Paths */}
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Active Paths
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activePaths.map((path) => (
+              <div key={path.id} className="p-4 rounded-lg border border-white/10 bg-black/20">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">{path.name}</h3>
+                  <Badge variant="outline" style={{ borderColor: path.color, color: path.color }}>
+                    {path.archetype}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">{path.description}</p>
+                <div className="flex items-center gap-2 text-sm">
+                  <span>Stage:</span>
+                  <span className="font-medium">{path.stages[path.currentStage]?.name || "Not Started"}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Daily Tasks */}
       <Card className="glass-card">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white font-orbitron">Ascension Progress</CardTitle>
-            <Badge variant="outline" className="border-blue-500 text-blue-400 font-orbitron">
-              Next: Rank D
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Today's Tasks
+            </div>
+            <Badge variant="outline">
+              {completedToday}/{tasks.length} Complete
             </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Progress value={(userProfile.currentXP / userProfile.nextRankXP) * 100} className="h-4 bg-gray-800/50" />
-            <div className="flex justify-between text-sm text-gray-400">
-              <span>
-                {userProfile.currentXP} / {userProfile.nextRankXP} XP
-              </span>
-              <span>{userProfile.nextRankXP - userProfile.currentXP} XP to ascension</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Daily Tasks - The Core */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-white font-orbitron">Today's Trials</CardTitle>
-          <p className="text-gray-400 text-sm">Each task completed shapes your evolution</p>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dailyTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`p-4 rounded-xl border transition-all duration-200 ${
-                  task.completed
-                    ? "bg-green-500/10 border-green-500/30"
-                    : "bg-black/20 border-white/10 hover:border-purple-500/30"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3 flex-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleTaskComplete(task.id)}
-                      disabled={task.completed}
-                      className="p-0 h-6 w-6 rounded-full"
-                    >
-                      {task.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-400" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-400 hover:text-purple-400" />
-                      )}
-                    </Button>
-                    <div className="flex-1">
-                      <h3 className={`font-bold ${task.completed ? "text-green-400 line-through" : "text-white"}`}>
-                        {task.title}
-                      </h3>
-                      <p className="text-gray-400 text-sm mt-1">{task.description}</p>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${
-                            task.difficulty === "Easy"
-                              ? "border-green-500 text-green-400"
-                              : task.difficulty === "Medium"
-                                ? "border-yellow-500 text-yellow-400"
-                                : "border-red-500 text-red-400"
-                          }`}
-                        >
-                          {task.difficulty}
-                        </Badge>
-                        <span className="text-xs text-gray-500">{task.timeEstimate}min</span>
-                        <span className="text-xs text-purple-400">+{task.xpReward} XP</span>
-                      </div>
-                    </div>
+            {tasks.map((task) => (
+              <div key={task.id} className="flex items-center gap-4 p-4 rounded-lg border border-white/10 bg-black/20">
+                <Checkbox
+                  checked={task.completed}
+                  onCheckedChange={() => !task.completed && onCompleteTask(task.id)}
+                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`font-medium ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+                      {task.title}
+                    </h3>
+                    <Badge className={`text-xs ${difficultyColors[task.difficulty]}`}>{task.difficulty}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{task.description}</p>
+                </div>
+
+                <div className="text-right">
+                  <div className="flex items-center gap-1 text-sm font-medium text-yellow-400">
+                    <Zap className="w-4 h-4" />
+                    {task.xpReward}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {Object.entries(task.attributeRewards).map(([attr, value]) => (
+                      <span key={attr} className="mr-1">
+                        {attributeIcons[attr as keyof typeof attributeIcons]} +{value}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Attribute Wheel */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-white font-orbitron">Soul Attributes</CardTitle>
-          <p className="text-gray-400 text-sm">The six pillars of your evolution</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {attributes.map((attribute) => {
-              const icons = {
-                Spiritual: "🕊️",
-                Intelligence: "⚡",
-                Creativity: "🎨",
-                Health: "💖",
-                Physical: "💪",
-                Resilience: "🛡️",
-              }
-
-              return (
-                <div key={attribute.name} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{icons[attribute.name as keyof typeof icons] || "⭐"}</span>
-                      <div>
-                        <div className="font-medium text-white">{attribute.name}</div>
-                        <div className="text-sm text-gray-400">
-                          {attribute.value}/{attribute.maxValue}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="border-gray-500 text-gray-400 font-orbitron">
-                      {attribute.rank}
-                    </Badge>
-                  </div>
-                  <Progress
-                    value={(attribute.value / attribute.maxValue) * 100}
-                    className="h-3 bg-gray-800/50"
-                    style={
-                      {
-                        "--progress-foreground": attribute.color,
-                      } as React.CSSProperties
-                    }
-                  />
-                  {attribute.decayRate > 0.1 && (
-                    <div className="text-xs text-orange-400 decay-warning">⚠ High decay rate - stay active!</div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Story Progress */}
-      <Card className="glass-card border-blue-500/30 bg-blue-500/5">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <BookOpen className="h-5 w-5 text-blue-400" />
-            <CardTitle className="text-white">Chapter Black Progress</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {currentChapter ? (
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Current Chapter</div>
-                <div className="font-orbitron text-xl font-bold text-blue-400">
-                  Chapter {currentChapter.chapterNumber}: {currentChapter.title}
-                </div>
-              </div>
-              <div className="text-sm text-gray-300 manga-text italic">
-                "{currentChapter.content.substring(0, 150)}..."
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {currentChapter.themes.map((theme) => (
-                  <Badge key={theme} variant="outline" className="text-xs border-blue-500/50 text-blue-400">
-                    {theme}
-                  </Badge>
-                ))}
-              </div>
-              <div className="text-xs text-gray-400">
-                Complete {currentChapter.requiredTaskCompletion}% of daily tasks to unlock the next chapter
-              </div>
-              <Progress value={taskCompletionRate} className="h-2 bg-gray-800/50" />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-              <BookOpen className="h-12 w-12 mb-2 opacity-50" />
-              <p>Your story awaits...</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

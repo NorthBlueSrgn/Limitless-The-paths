@@ -1,361 +1,302 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import type {
-  UserProfile,
-  Attribute,
-  Path,
-  DailyTask,
-  StoryChapter,
-  JournalEntry,
-  HunterExam,
-  SoulTrait,
-  DecayMetric,
-  Chronicle,
-} from "@/types/limitless"
-
-// Mock data with more immersive content
-const mockUserProfile: UserProfile = {
-  id: "hunter_001",
-  username: "The Seeker",
-  email: "seeker@chapterblack.dev",
-  rank: "E",
-  level: 1,
-  totalXP: 0,
-  currentXP: 0,
-  nextRankXP: 3000,
-  joinDate: "2024-01-01",
-  lastActive: new Date().toISOString(),
-  streak: 0,
-  title: "Unranked Hunter",
-  aura: "Dormant",
-}
-
-const mockAttributes: Attribute[] = [
-  {
-    name: "Spiritual",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.1,
-    lastUpdated: new Date().toISOString(),
-    color: "#8B5CF6",
-  },
-  {
-    name: "Physical",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.15,
-    lastUpdated: new Date().toISOString(),
-    color: "#EF4444",
-  },
-  {
-    name: "Health",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.05,
-    lastUpdated: new Date().toISOString(),
-    color: "#10B981",
-  },
-  {
-    name: "Intelligence",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.08,
-    lastUpdated: new Date().toISOString(),
-    color: "#3B82F6",
-  },
-  {
-    name: "Creativity",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.12,
-    lastUpdated: new Date().toISOString(),
-    color: "#F59E0B",
-  },
-  {
-    name: "Resilience",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.06,
-    lastUpdated: new Date().toISOString(),
-    color: "#6B7280",
-  },
-]
-
-const mockSoulTraits: SoulTrait[] = [
-  {
-    id: "strategist",
-    name: "The Strategist",
-    description: "Plans ahead and thinks systematically",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["intelligence_25", "consistency_7days"],
-    effects: ["+10% XP from mental tasks", "Unlock advanced planning tools"],
-    color: "#3B82F6",
-    position: { x: 100, y: 50 },
-  },
-  {
-    id: "ghost",
-    name: "The Ghost",
-    description: "Moves silently and strikes precisely",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["strategist", "predator"],
-    effects: ["Stealth mode for habits", "+15% efficiency"],
-    color: "#6B7280",
-    position: { x: 200, y: 100 },
-  },
-  {
-    id: "predator",
-    name: "The Predator",
-    description: "Hunts goals with relentless focus",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["physical_30", "resilience_25"],
-    effects: ["+20% XP from challenges", "Intimidation aura"],
-    color: "#EF4444",
-    position: { x: 150, y: 150 },
-  },
-  {
-    id: "oracle",
-    name: "The Oracle",
-    description: "Sees patterns and predicts outcomes",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["spiritual_40", "intelligence_35"],
-    effects: ["Future path predictions", "+25% insight XP"],
-    color: "#8B5CF6",
-    position: { x: 50, y: 100 },
-  },
-  {
-    id: "obsidian",
-    name: "The Obsidian",
-    description: "Unbreakable will and diamond focus",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["resilience_50", "streak_30days"],
-    effects: ["Immunity to decay", "+30% all XP"],
-    color: "#1F2937",
-    position: { x: 125, y: 200 },
-  },
-]
-
-const mockDailyTasks: DailyTask[] = [
-  {
-    id: "task_001",
-    title: "Morning Meditation",
-    description: "Begin your day with 10 minutes of focused meditation",
-    category: "Spiritual",
-    difficulty: "Easy",
-    xpReward: 50,
-    attributeRewards: { Spiritual: 10, Resilience: 5 },
-    completed: false,
-    timeEstimate: 10,
-    type: "daily",
-  },
-  {
-    id: "task_002",
-    title: "Strategic Reading",
-    description: "Read 20 pages of a challenging book",
-    category: "Intelligence",
-    difficulty: "Medium",
-    xpReward: 75,
-    attributeRewards: { Intelligence: 15, Creativity: 5 },
-    completed: false,
-    timeEstimate: 30,
-    type: "daily",
-  },
-  {
-    id: "task_003",
-    title: "Physical Training",
-    description: "Complete a 30-minute workout session",
-    category: "Physical",
-    difficulty: "Medium",
-    xpReward: 100,
-    attributeRewards: { Physical: 20, Health: 10 },
-    completed: false,
-    timeEstimate: 30,
-    type: "daily",
-  },
-]
+import { useState } from "react"
+import type { User, Task, Path, StoryChapter, AIMessage } from "@/types/limitless"
 
 export function useLimitlessData() {
-  const [userProfile, setUserProfile] = useState<UserProfile>(mockUserProfile)
-  const [attributes, setAttributes] = useState<Attribute[]>(mockAttributes)
-  const [soulTraits, setSoulTraits] = useState<SoulTrait[]>(mockSoulTraits)
-  const [activePaths, setActivePaths] = useState<Path[]>([])
-  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(mockDailyTasks)
-  const [storyChapters, setStoryChapters] = useState<StoryChapter[]>([])
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
-  const [hunterExams, setHunterExams] = useState<HunterExam[]>([])
-  const [decayMetrics, setDecayMetrics] = useState<DecayMetric[]>([])
-  const [chronicles, setChronicles] = useState<Chronicle[]>([])
+  const [user, setUser] = useState<User>({
+    id: "1",
+    name: "Hunter",
+    rank: "E",
+    level: 1,
+    xp: 150,
+    xpToNext: 300,
+    attributes: {
+      spiritual: 25,
+      physical: 30,
+      health: 35,
+      intelligence: 40,
+      creativity: 20,
+      resilience: 28,
+    },
+    activePaths: ["mastery", "will"],
+    completedTasks: 12,
+    totalTasks: 20,
+    streak: 5,
+    joinDate: "2024-01-01",
+    lastActive: new Date().toISOString(),
+  })
 
-  // Initialize data
-  useEffect(() => {
-    const loadData = async () => {
-      // Mock loading delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: "1",
+      title: "Morning Meditation",
+      description: "Complete 20 minutes of focused meditation",
+      category: "Spiritual",
+      difficulty: "Medium",
+      xpReward: 25,
+      attributeRewards: { spiritual: 3, resilience: 1 },
+      completed: false,
+      pathId: "spiritual",
+    },
+    {
+      id: "2",
+      title: "Physical Training",
+      description: "Complete strength training routine",
+      category: "Physical",
+      difficulty: "Hard",
+      xpReward: 35,
+      attributeRewards: { physical: 4, health: 2 },
+      completed: true,
+      pathId: "will",
+    },
+    {
+      id: "3",
+      title: "Strategic Reading",
+      description: "Read 30 pages of strategic thinking material",
+      category: "Intelligence",
+      difficulty: "Medium",
+      xpReward: 20,
+      attributeRewards: { intelligence: 3 },
+      completed: false,
+      pathId: "mastery",
+    },
+    {
+      id: "4",
+      title: "Creative Expression",
+      description: "Spend 45 minutes on creative work",
+      category: "Creativity",
+      difficulty: "Easy",
+      xpReward: 15,
+      attributeRewards: { creativity: 2 },
+      completed: false,
+    },
+  ])
 
-      // Set initial story chapter
-      setStoryChapters([
+  const [paths, setPaths] = useState<Path[]>([
+    {
+      id: "mastery",
+      name: "Path of Mastery",
+      archetype: "The Perfectionist",
+      description: "Pursue excellence through deliberate practice and continuous refinement",
+      philosophy:
+        '"Excellence is never an accident. It is always the result of high intention, sincere effort, and intelligent execution."',
+      stages: [
         {
-          id: "chapter_001",
-          title: "The Awakening",
-          content: `The room is silent. White walls stretch endlessly, unmarked by time or memory. You stand at the threshold of something greater than yourself.
-
-Hunter designation: ${mockUserProfile.id}. Rank: E. Status: Unproven.
-
-In this place, potential means nothing without action. Every choice you make will be recorded, analyzed, perfected. The system watches. The system learns. The system evolves you.
-
-Your first test begins now. Will you rise to meet it, or will you remain another forgotten soul in the archives of mediocrity?
-
-The choice, as always, is yours.`,
-          chapterNumber: 1,
+          id: "novice",
+          name: "Novice",
+          description: "Learning the fundamentals",
+          requirements: ["Complete 10 practice sessions", "Maintain 7-day streak"],
+          rewards: ["Precision Focus ability", "+5 Intelligence"],
           unlocked: true,
-          completed: false,
-          themes: ["awakening", "potential", "choice"],
-          requiredTaskCompletion: 60,
-          rewards: [{ type: "XP", value: 100 }],
-          tone: "neutral",
-          characterMoments: ["First system interaction", "Rank E designation"],
         },
-      ])
-
-      // Set initial hunter exam
-      setHunterExams([
         {
-          id: "exam_001",
-          name: "The First Gate",
-          description: "Prove your dedication and unlock the path to Rank D",
-          targetRank: "D",
-          phases: [
-            {
-              id: "phase_001",
-              name: "Foundation of Will",
-              type: "Endurance",
-              description: "Complete all daily tasks for 7 consecutive days",
-              requirements: ["daily_tasks_completion", "streak_7days", "no_decay"],
-              completed: false,
-            },
-            {
-              id: "phase_002",
-              name: "Mind Over Matter",
-              type: "Challenge",
-              description: "Demonstrate mental resilience through focused challenges",
-              requirements: ["meditation_streak", "reading_goals", "reflection_depth"],
-              completed: false,
-            },
-            {
-              id: "phase_003",
-              name: "The Crucible",
-              type: "Task",
-              description: "Face a personalized trial based on your chosen paths",
-              requirements: ["path_mastery", "attribute_threshold", "story_engagement"],
-              completed: false,
-            },
-          ],
-          rewards: [
-            { type: "XP", value: 500 },
-            { type: "Title", value: 1, target: "Proven Hunter" },
-            { type: "Trait", value: 1, target: "Iron Will" },
-          ],
+          id: "apprentice",
+          name: "Apprentice",
+          description: "Developing consistent practice",
+          requirements: ["Complete 50 practice sessions", "Achieve 80% accuracy"],
+          rewards: ["Flow State ability", "+10 Intelligence"],
           unlocked: false,
-          completed: false,
-          attempts: 0,
-          bestScore: 0,
-          duration: 7,
-          intensity: "Standard",
         },
-      ])
-    }
+      ],
+      currentStage: 0,
+      isActive: true,
+      color: "#3b82f6",
+    },
+    {
+      id: "will",
+      name: "Path of Will",
+      archetype: "The Unbreakable",
+      description: "Forge unshakeable determination through adversity and discipline",
+      philosophy:
+        '"The will to win, the desire to succeed, the urge to reach your full potential... these are the keys that will unlock the door to personal excellence."',
+      stages: [
+        {
+          id: "initiate",
+          name: "Initiate",
+          description: "Building mental fortitude",
+          requirements: ["Complete 20 difficult tasks", "Never break streak for 14 days"],
+          rewards: ["Iron Will ability", "+5 Resilience"],
+          unlocked: true,
+        },
+      ],
+      currentStage: 0,
+      isActive: true,
+      color: "#ef4444",
+    },
+    {
+      id: "spiritual",
+      name: "Path of Spiritual Discipline",
+      archetype: "The Sage",
+      description: "Cultivate inner wisdom through mindfulness and self-reflection",
+      philosophy: '"The quieter you become, the more you are able to hear."',
+      stages: [
+        {
+          id: "seeker",
+          name: "Seeker",
+          description: "Beginning the inner journey",
+          requirements: ["Meditate for 100 hours total", "Complete self-reflection journal"],
+          rewards: ["Inner Sight ability", "+5 Spiritual"],
+          unlocked: false,
+        },
+      ],
+      currentStage: 0,
+      isActive: false,
+      color: "#8b5cf6",
+    },
+    {
+      id: "strategist",
+      name: "Path of the Strategist",
+      archetype: "The Mastermind",
+      description: "Master the art of planning, analysis, and tactical thinking",
+      philosophy: '"In the midst of chaos, there is also opportunity."',
+      stages: [
+        {
+          id: "tactician",
+          name: "Tactician",
+          description: "Learning strategic fundamentals",
+          requirements: ["Analyze 10 complex scenarios", "Create 5 strategic plans"],
+          rewards: ["Strategic Vision ability", "+5 Intelligence"],
+          unlocked: false,
+        },
+      ],
+      currentStage: 0,
+      isActive: false,
+      color: "#10b981",
+    },
+  ])
 
-    loadData()
-  }, [])
+  const [currentChapter, setCurrentChapter] = useState<StoryChapter>({
+    id: "ch001",
+    title: "The Awakening",
+    content: `The morning mist clings to the training grounds like whispers of forgotten dreams. You stand at the threshold of transformation, your reflection barely recognizable in the polished steel of the academy gates.
+
+"Another E-rank hunter," the instructor's voice cuts through the silence, cold and analytical. "Tell me, what makes you think you're different from the thousands who came before you?"
+
+Your hands clench involuntarily. The weight of mediocrity has followed you here, but something deeper stirs within—a hunger that refuses to be satisfied with ordinary limits.
+
+The path ahead splits into multiple directions, each one demanding a different sacrifice, a different version of who you might become. The choice is yours, but choose wisely. In this world, weakness is not just failure—it's erasure.
+
+*Your recent training completion has caught the attention of senior hunters. They watch from the shadows, evaluating, calculating your potential worth.*`,
+    tone: "dark",
+    unlocked: true,
+    dateUnlocked: new Date().toISOString(),
+    characterMoments: [
+      "The instructor's piercing gaze",
+      "Your reflection in the steel gates",
+      "The weight of countless failures before you",
+    ],
+  })
+
+  const [aiMessages, setAiMessages] = useState<AIMessage[]>([
+    {
+      id: "1",
+      content:
+        "Welcome, Hunter. I am The Order—your guide through the labyrinth of transformation. I see you've begun your journey. Tell me, what drives you to seek power beyond your current limitations?",
+      type: "assistant",
+      timestamp: new Date().toISOString(),
+      category: "guidance",
+    },
+  ])
 
   const completeTask = (taskId: string) => {
-    setDailyTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, completed: true } : task)))
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id === taskId && !task.completed) {
+          // Update user stats
+          setUser((prevUser) => ({
+            ...prevUser,
+            xp: prevUser.xp + task.xpReward,
+            completedTasks: prevUser.completedTasks + 1,
+            attributes: {
+              ...prevUser.attributes,
+              ...Object.entries(task.attributeRewards).reduce(
+                (acc, [key, value]) => ({
+                  ...acc,
+                  [key]: prevUser.attributes[key as keyof typeof prevUser.attributes] + (value || 0),
+                }),
+                {},
+              ),
+            },
+          }))
 
-    // Update XP and attributes
-    const task = dailyTasks.find((t) => t.id === taskId)
-    if (task) {
-      setUserProfile((prev) => ({
-        ...prev,
-        currentXP: prev.currentXP + task.xpReward,
-        totalXP: prev.totalXP + task.xpReward,
-      }))
+          return { ...task, completed: true }
+        }
+        return task
+      }),
+    )
+  }
 
-      // Update attributes
-      Object.entries(task.attributeRewards).forEach(([attrName, xp]) => {
-        setAttributes((prev) =>
-          prev.map((attr) =>
-            attr.name === attrName
-              ? { ...attr, value: Math.min(attr.value + xp, attr.maxValue), xpGained: attr.xpGained + xp }
-              : attr,
-          ),
-        )
-      })
+  const activatePath = (pathId: string) => {
+    if (user.activePaths.length >= 3) return false
 
-      // Check for rank up
-      const completedTasks = dailyTasks.filter((t) => t.completed).length + 1
-      const totalTasks = dailyTasks.length
-      if (completedTasks === totalTasks) {
-        // Unlock next chapter or exam
-        console.log("All tasks completed! Story progression unlocked.")
+    setUser((prev) => ({
+      ...prev,
+      activePaths: [...prev.activePaths, pathId],
+    }))
+
+    setPaths((prev) => prev.map((path) => (path.id === pathId ? { ...path, isActive: true } : path)))
+
+    return true
+  }
+
+  const deactivatePath = (pathId: string) => {
+    setUser((prev) => ({
+      ...prev,
+      activePaths: prev.activePaths.filter((id) => id !== pathId),
+    }))
+
+    setPaths((prev) => prev.map((path) => (path.id === pathId ? { ...path, isActive: false } : path)))
+  }
+
+  const addAIMessage = (content: string, category?: AIMessage["category"]) => {
+    const userMessage: AIMessage = {
+      id: Date.now().toString(),
+      content,
+      type: "user",
+      timestamp: new Date().toISOString(),
+      category,
+    }
+
+    setAiMessages((prev) => [...prev, userMessage])
+
+    // Simulate AI response
+    setTimeout(() => {
+      const responses = {
+        task: "I see you seek guidance on your tasks. Remember, each completed objective is not just progress—it's proof of your evolution. Which challenge calls to you most strongly?",
+        story:
+          "The narrative of your journey unfolds with each choice. Your recent actions have shifted the cosmic balance. Shall I reveal what the shadows whisper about your path?",
+        guidance:
+          "Wisdom comes to those who seek it earnestly. What aspect of your transformation requires illumination? Speak, and I shall provide counsel.",
+        analysis:
+          "Your patterns reveal much about your true nature. I observe strength where you see weakness, potential where you see limitation. What would you have me analyze?",
+        challenge:
+          "You hunger for greater trials. Excellent. True power is forged in the crucible of adversity. Are you prepared for what lies beyond your comfort zone?",
+        philosophy:
+          "The deepest truths are often the simplest. In seeking to understand the nature of power, one must first understand the nature of self. What philosophical question burns within you?",
       }
-    }
-  }
 
-  const addJournalEntry = (entry: Omit<JournalEntry, "id">) => {
-    const newEntry: JournalEntry = {
-      ...entry,
-      id: `journal_${Date.now()}`,
-    }
-    setJournalEntries((prev) => [newEntry, ...prev])
-  }
+      const aiResponse: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        content: responses[category || "guidance"],
+        type: "assistant",
+        timestamp: new Date().toISOString(),
+        category,
+      }
 
-  const addChronicle = (chronicle: Omit<Chronicle, "id">) => {
-    const newChronicle: Chronicle = {
-      ...chronicle,
-      id: `chronicle_${Date.now()}`,
-    }
-    setChronicles((prev) => [newChronicle, ...prev])
-  }
-
-  const updateSoulTrait = (traitId: string, updates: Partial<SoulTrait>) => {
-    setSoulTraits((prev) => prev.map((trait) => (trait.id === traitId ? { ...trait, ...updates } : trait)))
+      setAiMessages((prev) => [...prev, aiResponse])
+    }, 1000)
   }
 
   return {
-    userProfile,
-    attributes,
-    soulTraits,
-    activePaths,
-    dailyTasks,
-    storyChapters,
-    journalEntries,
-    hunterExams,
-    decayMetrics,
-    chronicles,
+    user,
+    tasks,
+    paths,
+    currentChapter,
+    aiMessages,
     completeTask,
-    addJournalEntry,
-    addChronicle,
-    updateSoulTrait,
-    setUserProfile,
-    setAttributes,
-    setActivePaths,
-    setDailyTasks,
+    activatePath,
+    deactivatePath,
+    addAIMessage,
   }
 }
