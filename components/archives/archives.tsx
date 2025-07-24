@@ -3,13 +3,11 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Database, Plus, Search, Trophy } from "lucide-react"
+import { Plus, Calendar, Tag, Heart, BookOpen, Lightbulb, TrendingUp, Target, Zap } from "lucide-react"
 import type { JournalEntry, Chronicle } from "@/types/limitless"
 
 interface ArchivesProps {
@@ -19,324 +17,235 @@ interface ArchivesProps {
   onAddChronicle: (chronicle: Omit<Chronicle, "id">) => void
 }
 
+const entryTypeIcons = {
+  Reflection: Heart,
+  Breakthrough: Lightbulb,
+  Setback: TrendingUp,
+  Philosophy: BookOpen,
+  Goal: Target,
+  "Rival Event": Zap,
+}
+
 const entryTypeColors = {
-  Reflection: "border-blue-500 text-blue-400",
-  Breakthrough: "border-green-500 text-green-400",
-  Setback: "border-red-500 text-red-400",
-  Philosophy: "border-purple-500 text-purple-400",
-  Goal: "border-yellow-500 text-yellow-400",
-  "Rival Event": "border-orange-500 text-orange-400",
+  Reflection: "text-blue-400 border-blue-400",
+  Breakthrough: "text-yellow-400 border-yellow-400",
+  Setback: "text-red-400 border-red-400",
+  Philosophy: "text-purple-400 border-purple-400",
+  Goal: "text-green-400 border-green-400",
+  "Rival Event": "text-orange-400 border-orange-400",
 }
 
 const chronicleTypeColors = {
-  Journal: "border-blue-500 text-blue-400",
-  "Story Response": "border-purple-500 text-purple-400",
-  "Mindset Shift": "border-green-500 text-green-400",
-  "Arc Reflection": "border-yellow-500 text-yellow-400",
+  Journal: "text-blue-400",
+  "Story Response": "text-purple-400",
+  "Mindset Shift": "text-yellow-400",
+  "Arc Reflection": "text-green-400",
 }
 
 export function Archives({ journalEntries, chronicles, onAddJournalEntry, onAddChronicle }: ArchivesProps) {
-  const [activeTab, setActiveTab] = useState("timeline")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState("all")
+  const [isAddingEntry, setIsAddingEntry] = useState(false)
   const [newEntry, setNewEntry] = useState({
     title: "",
     content: "",
-    type: "Reflection" as const,
+    type: "Reflection" as JournalEntry["type"],
     mood: [] as string[],
     tags: [] as string[],
   })
 
-  const allEntries = [
-    ...journalEntries.map((entry) => ({ ...entry, source: "journal" as const })),
-    ...chronicles.map((chronicle) => ({ ...chronicle, source: "chronicle" as const })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  const filteredEntries = allEntries.filter((entry) => {
-    const matchesSearch =
-      entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.content.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter =
-      filterType === "all" ||
-      (filterType === "journal" && entry.source === "journal") ||
-      (filterType === "chronicle" && entry.source === "chronicle") ||
-      (entry.source === "journal" && (entry as any).type === filterType)
-    return matchesSearch && matchesFilter
-  })
-
   const handleAddEntry = () => {
-    if (!newEntry.title.trim() || !newEntry.content.trim()) return
-
-    onAddJournalEntry({
-      ...newEntry,
-      date: new Date().toISOString(),
-      season: "Current Season",
-      linkedPaths: [],
-      xpGained: 50,
-    })
-
-    setNewEntry({
-      title: "",
-      content: "",
-      type: "Reflection",
-      mood: [],
-      tags: [],
-    })
+    if (newEntry.title && newEntry.content) {
+      onAddJournalEntry({
+        ...newEntry,
+        date: new Date().toISOString(),
+        season: "Current Season",
+        linkedPaths: [],
+        xpGained: 25,
+      })
+      setNewEntry({ title: "", content: "", type: "Reflection", mood: [], tags: [] })
+      setIsAddingEntry(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Database className="w-6 h-6 text-primary" />
-            <span className="font-orbitron chapter-title">Archives</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-400 manga-text">
-            Your evolution database. Every reflection, breakthrough, and moment of growth is preserved here, forming the
-            foundation of your transformation story.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+          Archives
+        </h1>
+        <p className="text-purple-300">Chronicle your journey. Reflect on your growth. Document your transformation.</p>
+      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="journal">Journal</TabsTrigger>
-          <TabsTrigger value="chronicles">Chronicles</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
+      <Tabs defaultValue="journal" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-black/40 border border-purple-500/20">
+          <TabsTrigger value="journal" className="data-[state=active]:bg-purple-600/30">
+            Journal Entries
+          </TabsTrigger>
+          <TabsTrigger value="chronicles" className="data-[state=active]:bg-purple-600/30">
+            Chronicles
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="timeline" className="space-y-6">
-          {/* Search and Filter */}
-          <Card className="glass-card">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search your journey..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter entries" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Entries</SelectItem>
-                    <SelectItem value="journal">Journal Only</SelectItem>
-                    <SelectItem value="chronicle">Chronicles Only</SelectItem>
-                    <SelectItem value="Breakthrough">Breakthroughs</SelectItem>
-                    <SelectItem value="Setback">Setbacks</SelectItem>
-                    <SelectItem value="Philosophy">Philosophy</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="journal" className="space-y-4">
+          {/* Add Entry Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setIsAddingEntry(!isAddingEntry)}
+              className="bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Entry
+            </Button>
+          </div>
 
-          {/* Timeline */}
-          <Card className="glass-card">
-            <CardContent className="p-6">
-              <ScrollArea className="h-96">
-                <div className="space-y-6">
-                  {filteredEntries.map((entry, index) => (
-                    <div key={entry.id} className="timeline-node relative pl-8">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-white">{entry.title}</h3>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                entry.source === "journal"
-                                  ? entryTypeColors[(entry as any).type]
-                                  : chronicleTypeColors[(entry as any).type]
-                              }`}
-                            >
-                              {entry.source === "journal" ? (entry as any).type : (entry as any).type}
-                            </Badge>
-                            <span className="text-xs text-gray-400">{new Date(entry.date).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-gray-300 text-sm line-clamp-3">{entry.content}</p>
-
-                        {entry.source === "journal" && (entry as any).mood && (
-                          <div className="flex flex-wrap gap-1">
-                            {(entry as any).mood.map((mood: string) => (
-                              <Badge key={mood} variant="outline" className="text-xs">
-                                {mood}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {entry.source === "chronicle" && (entry as any).insights && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-gray-400">Key Insights:</span>
-                            <ul className="space-y-1">
-                              {(entry as any).insights.map((insight: string, i: number) => (
-                                <li key={i} className="text-xs text-purple-400 flex items-center gap-2">
-                                  <span className="w-1 h-1 bg-purple-400 rounded-full"></span>
-                                  {insight}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="journal" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* New Entry Form */}
-            <Card className="glass-card">
+          {/* Add Entry Form */}
+          {isAddingEntry && (
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  New Entry
-                </CardTitle>
+                <CardTitle className="text-purple-400">New Journal Entry</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Input
                   placeholder="Entry title..."
                   value={newEntry.title}
-                  onChange={(e) => setNewEntry((prev) => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })}
+                  className="bg-black/20 border-purple-500/20"
                 />
 
-                <Select
+                <select
                   value={newEntry.type}
-                  onValueChange={(value: any) => setNewEntry((prev) => ({ ...prev, type: value }))}
+                  onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value as JournalEntry["type"] })}
+                  className="w-full p-2 bg-black/20 border border-purple-500/20 rounded text-white"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Reflection">Reflection</SelectItem>
-                    <SelectItem value="Breakthrough">Breakthrough</SelectItem>
-                    <SelectItem value="Setback">Setback</SelectItem>
-                    <SelectItem value="Philosophy">Philosophy</SelectItem>
-                    <SelectItem value="Goal">Goal</SelectItem>
-                    <SelectItem value="Rival Event">Rival Event</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {Object.keys(entryTypeIcons).map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
 
                 <Textarea
-                  placeholder="What insights did you gain? How did you grow?"
+                  placeholder="Write your thoughts..."
                   value={newEntry.content}
-                  onChange={(e) => setNewEntry((prev) => ({ ...prev, content: e.target.value }))}
-                  className="min-h-32"
+                  onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
+                  className="bg-black/20 border-purple-500/20 min-h-32"
                 />
 
-                <Button
-                  onClick={handleAddEntry}
-                  className="w-full"
-                  disabled={!newEntry.title.trim() || !newEntry.content.trim()}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Save Entry
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleAddEntry} size="sm">
+                    Save Entry
+                  </Button>
+                  <Button variant="ghost" onClick={() => setIsAddingEntry(false)} size="sm">
+                    Cancel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Journal Entries */}
-            <div className="lg:col-span-2 space-y-4">
-              {journalEntries.map((entry) => (
-                <Card key={entry.id} className="glass-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-white">{entry.title}</h3>
+          {/* Journal Entries */}
+          <div className="space-y-4">
+            {journalEntries.map((entry) => {
+              const TypeIcon = entryTypeIcons[entry.type]
+              return (
+                <Card key={entry.id} className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-xs ${entryTypeColors[entry.type]}`}>
+                        <TypeIcon className="w-5 h-5 text-purple-400" />
+                        <CardTitle className="text-white">{entry.title}</CardTitle>
+                        <Badge variant="outline" className={`${entryTypeColors[entry.type]} bg-black/20`}>
                           {entry.type}
                         </Badge>
-                        <span className="text-xs text-gray-400">{new Date(entry.date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-purple-400">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(entry.date).toLocaleDateString()}
                       </div>
                     </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-purple-100 leading-relaxed">{entry.content}</p>
 
-                    <p className="text-gray-300 text-sm mb-3">{entry.content}</p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-wrap gap-1">
-                        {entry.mood.map((mood) => (
-                          <Badge key={mood} variant="outline" className="text-xs">
-                            {mood}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="text-xs text-green-400">+{entry.xpGained} XP</div>
+                    <div className="flex flex-wrap gap-2">
+                      {entry.mood.map((mood) => (
+                        <Badge key={mood} variant="secondary" className="bg-purple-900/30 text-purple-300">
+                          <Heart className="w-3 h-3 mr-1" />
+                          {mood}
+                        </Badge>
+                      ))}
+                      {entry.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-blue-400 border-blue-400">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
+
+                    {entry.xpGained > 0 && (
+                      <div className="flex items-center gap-1 text-sm text-green-400">
+                        <Zap className="w-4 h-4" />+{entry.xpGained} XP gained from reflection
+                      </div>
+                    )}
+
+                    {entry.storyImpact && (
+                      <div className="p-2 bg-purple-900/20 rounded border border-purple-500/20">
+                        <p className="text-xs text-purple-400 mb-1">Story Impact:</p>
+                        <p className="text-sm text-purple-300">{entry.storyImpact}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+              )
+            })}
           </div>
         </TabsContent>
 
-        <TabsContent value="chronicles" className="space-y-6">
+        <TabsContent value="chronicles" className="space-y-4">
           <div className="space-y-4">
             {chronicles.map((chronicle) => (
-              <Card key={chronicle.id} className="glass-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-white text-lg">{chronicle.title}</h3>
+              <Card key={chronicle.id} className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white">{chronicle.title}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={`text-xs ${chronicleTypeColors[chronicle.type]}`}>
+                      <Badge
+                        variant="outline"
+                        className={`${chronicleTypeColors[chronicle.type]} border-current bg-black/20`}
+                      >
                         {chronicle.type}
                       </Badge>
-                      <span className="text-xs text-gray-400">{new Date(chronicle.date).toLocaleDateString()}</span>
+                      <span className="text-sm text-purple-400">{new Date(chronicle.date).toLocaleDateString()}</span>
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-purple-100 leading-relaxed">{chronicle.content}</p>
 
-                  <p className="text-gray-300 manga-text mb-4">{chronicle.content}</p>
-
-                  {chronicle.insights && chronicle.insights.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-white">Key Insights</h4>
-                      <ul className="space-y-1">
+                  {chronicle.insights.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-purple-400 mb-2">Key Insights:</h4>
+                      <div className="space-y-1">
                         {chronicle.insights.map((insight, index) => (
-                          <li key={index} className="text-sm text-purple-400 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
+                          <div key={index} className="flex items-center gap-2 text-sm text-purple-300">
+                            <Lightbulb className="w-3 h-3 text-yellow-400" />
                             {insight}
-                          </li>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {chronicle.orderAnalysis && (
+                    <div className="p-3 bg-gradient-to-r from-purple-900/20 to-black/20 rounded border border-purple-500/20">
+                      <h4 className="text-sm font-semibold text-purple-400 mb-1">The Order's Analysis:</h4>
+                      <p className="text-sm text-purple-300 italic">"{chronicle.orderAnalysis}"</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
             ))}
           </div>
-        </TabsContent>
-
-        <TabsContent value="achievements" className="space-y-6">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-400" />
-                Milestones & Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-gray-400">
-                <Trophy className="w-16 w-16 mx-auto mb-4 opacity-50" />
-                <p>Your achievements will be recorded here</p>
-                <p className="text-xs text-gray-500 mt-2">Complete paths and reach milestones to unlock achievements</p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
