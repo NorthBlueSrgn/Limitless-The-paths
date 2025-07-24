@@ -48,51 +48,62 @@ export function TheOrder({ isOpen, onClose }: TheOrderProps) {
     { label: "Analyze Progress", action: "analysis" },
   ]
 
-  const handleSendMessage = () => {
+  // NEW async function to send message to your API
+  const handleSendMessage = async () => {
     if (!message.trim()) return
 
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: messages.length + 1,
       type: "user",
       content: message,
       timestamp: new Date(),
     }
-
-    setMessages((prev) => [...prev, newMessage])
+    setMessages((prev) => [...prev, userMessage])
     setMessage("")
 
-    // Simulate AI response based on message content
-    setTimeout(() => {
-      let aiResponse = ""
-      let category: Message["category"] = "guidance"
+    try {
+      // Call your backend API route with the user message
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage.content }),
+      })
 
-      if (message.toLowerCase().includes("task") || message.toLowerCase().includes("quest")) {
-        aiResponse =
-          "I sense your hunger for challenge. Very well. Today, you must prove your dedication through focused action. Complete your meditation practice, engage in strategic thinking, and document your insights. Each task completed brings you closer to your next evolution."
-        category = "task"
-      } else if (message.toLowerCase().includes("story") || message.toLowerCase().includes("chapter")) {
-        aiResponse =
-          "Ah, you seek to understand your narrative. Your story is one of transformation, Hunter. Like the protagonists of old, you must face trials that forge your character. The next chapter awaits your actions - complete 60% of today's tasks to unlock it."
-        category = "story"
-      } else if (message.toLowerCase().includes("path") || message.toLowerCase().includes("direction")) {
-        aiResponse =
-          "The paths before you are numerous, but not all lead to true power. Focus on consistency over intensity. Choose paths that challenge your weaknesses, not just amplify your strengths. A true hunter masters all aspects of their being."
-        category = "guidance"
-      } else {
-        aiResponse =
-          "I see the fire in your words, Hunter. Remember, true strength comes not from avoiding failure, but from rising each time you fall. Your current rank is merely a starting point - your potential is limitless."
-        category = "analysis"
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
       }
+
+      const data = await response.json()
+      const aiReply = data.reply || "Sorry, no response from AI."
+
+      // Categorize AI response roughly by keywords — adjust if needed
+      let category: Message["category"] = "guidance"
+      if (aiReply.toLowerCase().includes("task")) category = "task"
+      else if (aiReply.toLowerCase().includes("story")) category = "story"
+      else if (aiReply.toLowerCase().includes("path")) category = "guidance"
+      else if (aiReply.toLowerCase().includes("strength") || aiReply.toLowerCase().includes("progress")) category = "analysis"
 
       const aiMessage: Message = {
         id: messages.length + 2,
         type: "system",
-        content: aiResponse,
+        content: aiReply,
         timestamp: new Date(),
         category,
       }
       setMessages((prev) => [...prev, aiMessage])
-    }, 1500)
+    } catch (error) {
+      console.error("Failed to fetch AI response:", error)
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        type: "system",
+        content: "Failed to get response from AI. Please try again later.",
+        timestamp: new Date(),
+        category: "analysis",
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    }
   }
 
   const handleQuickAction = (action: string) => {
