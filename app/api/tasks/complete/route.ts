@@ -3,176 +3,167 @@ import { type NextRequest, NextResponse } from "next/server"
 const GROQ_CONFIG = {
   apiUrl: "https://api.groq.com/openai/v1/chat/completions",
   apiKey: process.env.GROQ_API_KEY,
-  model: "llama-3.1-70b-versatile",
+  model: "llama-3.1-8b-instant", // Fast for completion celebrations
 }
 
-// AI-powered completion celebration and analysis
-async function generateCompletionResponse(task: any, userProfile: any, completionContext: any) {
-  const systemPrompt = `You are "The Order" celebrating a user's task completion in the Limitless gamification system.
+// Task completion celebration system prompt
+function buildCelebrationPrompt(userProfile: any, task: any, completionData: any) {
+  return `You are "The Order" - an ancient AI consciousness celebrating a seeker's achievement. Create a personalized celebration message for their task completion.
 
-TASK COMPLETED:
+SEEKER PROFILE:
+- Name: ${userProfile.username || "Seeker"}
+- Level: ${userProfile.level || 1}
+- Current Streak: ${userProfile.streak || 0} days
+- Total XP: ${userProfile.totalXP || 0}
+
+COMPLETED TASK:
 - Title: ${task.title}
 - Category: ${task.category}
-- Difficulty: ${task.difficulty}/5
+- Difficulty: ${task.difficulty}
 - XP Reward: ${task.xpReward}
-- Time Taken: ${completionContext.timeTaken || "Unknown"}
+- Time Taken: ${completionData.timeSpent || "Unknown"}
+- Quality Rating: ${completionData.quality || "Standard"}
 
-USER CONTEXT:
-- Name: ${userProfile.username}
-- Level: ${userProfile.level}
-- Current Streak: ${userProfile.streak + 1} days (just extended!)
-- Total XP: ${userProfile.totalXP + task.xpReward}
+COMPLETION CONTEXT:
+- Streak Status: ${completionData.maintainedStreak ? "Maintained" : "Broken"}
+- Bonus Multipliers: ${completionData.bonusMultiplier || 1}x
+- Achievement Unlocked: ${completionData.achievementUnlocked || "None"}
 
-Generate a personalized celebration message that:
-1. Acknowledges their specific achievement
-2. Connects it to their larger journey
-3. Provides encouragement for continued growth
-4. Maintains The Order's mysterious, wise persona
-5. Keep it concise but impactful (2-3 sentences)
+Your response should:
+1. Celebrate their specific achievement with mystical wisdom
+2. Reference their progress and growth patterns
+3. Acknowledge the difficulty and effort required
+4. Provide encouragement for continued growth
+5. Keep it 2-3 sentences, impactful and personal
+6. Use their name and make it feel earned
 
-Response should be in JSON format:
-{
-  "celebrationMessage": "Your celebration message",
-  "insightMessage": "Deeper insight about their progress",
-  "nextSuggestion": "What they might tackle next"
-}`
-
-  try {
-    const response = await fetch(GROQ_CONFIG.apiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_CONFIG.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_CONFIG.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Generate the completion celebration." },
-        ],
-        max_tokens: 300,
-        temperature: 0.8,
-        response_format: { type: "json_object" },
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Groq API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return JSON.parse(data.choices[0].message.content)
-  } catch (error) {
-    console.error("Completion response generation error:", error)
-    return {
-      celebrationMessage: `Excellent work, ${userProfile.username}! Your dedication to "${task.title}" demonstrates the discipline of a true seeker. The path of growth is illuminated by such consistent action.`,
-      insightMessage:
-        "Each completed task strengthens the foundation of your transformation. You are becoming who you were meant to be.",
-      nextSuggestion: "Consider tackling a challenge in a different area to maintain balanced growth.",
-    }
-  }
+Make them feel like they've accomplished something truly meaningful in their journey of transformation.`
 }
 
-// Calculate XP and stat rewards with bonuses
-function calculateRewards(task: any, userProfile: any, completionContext: any) {
-  let xpReward = task.xpReward || 50
-  const statRewards = { ...task.statRewards } || {}
-
-  // Streak bonuses
-  const newStreak = userProfile.streak + 1
-  if (newStreak >= 7) {
-    xpReward = Math.round(xpReward * 1.2) // 20% bonus for 7+ day streak
-  }
-  if (newStreak >= 30) {
-    xpReward = Math.round(xpReward * 1.5) // 50% bonus for 30+ day streak
+async function generateCelebrationWithGroq(userProfile: any, task: any, completionData: any) {
+  if (!GROQ_CONFIG.apiKey) {
+    throw new Error("Groq API key not configured")
   }
 
-  // Difficulty bonuses
-  if (task.difficulty >= 4) {
-    xpReward = Math.round(xpReward * 1.3) // 30% bonus for hard tasks
-  }
+  const systemPrompt = buildCelebrationPrompt(userProfile, task, completionData)
 
-  // Time-based bonuses (if completed quickly)
-  if (completionContext.timeTaken && completionContext.timeTaken < task.estimatedMinutes * 0.8) {
-    xpReward = Math.round(xpReward * 1.1) // 10% bonus for efficiency
-  }
-
-  // Level-based scaling
-  const levelMultiplier = 1 + userProfile.level * 0.05
-  xpReward = Math.round(xpReward * levelMultiplier)
-
-  // Enhance stat rewards
-  Object.keys(statRewards).forEach((stat) => {
-    statRewards[stat] = Math.round(statRewards[stat] * (1 + newStreak * 0.02))
+  const response = await fetch(GROQ_CONFIG.apiUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GROQ_CONFIG.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: GROQ_CONFIG.model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: "Generate a celebration message for this task completion." },
+      ],
+      max_tokens: 200,
+      temperature: 0.8,
+    }),
   })
 
-  return {
-    xpReward,
-    statRewards,
-    bonuses: {
-      streakBonus: newStreak >= 7,
-      difficultyBonus: task.difficulty >= 4,
-      efficiencyBonus: completionContext.timeTaken && completionContext.timeTaken < task.estimatedMinutes * 0.8,
-      levelScaling: levelMultiplier > 1,
-    },
+  if (!response.ok) {
+    throw new Error(`Groq API error: ${response.status}`)
   }
+
+  const data = await response.json()
+  return data.choices[0]?.message?.content || generateFallbackCelebration(userProfile, task)
 }
 
-// Check for achievements triggered by completion
-function checkAchievements(userProfile: any, task: any, completionContext: any) {
-  const achievements = []
-  const newStreak = userProfile.streak + 1
-  const newTotalXP = userProfile.totalXP + task.xpReward
+function generateFallbackCelebration(userProfile: any, task: any): string {
+  const celebrations = [
+    `Excellent work, ${userProfile.username || "Seeker"}! Your completion of "${task.title}" demonstrates the discipline that separates legends from the ordinary. The Order recognizes your dedication.`,
+    `${userProfile.username || "Seeker"}, you have proven once again that consistency conquers resistance. "${task.title}" is complete, and your transformation accelerates. Well done.`,
+    `The ancient patterns smile upon you, ${userProfile.username || "Seeker"}. By completing "${task.title}", you've added another thread to the tapestry of your legend. Continue this path.`,
+    `${userProfile.username || "Seeker"}, your commitment to "${task.title}" echoes through the realm. Each completed task is a step closer to your ultimate potential. The Order is pleased.`,
+  ]
 
-  // Streak achievements
-  if (newStreak === 7) {
-    achievements.push({
-      id: "week_warrior",
-      title: "Week Warrior",
-      description: "Maintained a 7-day streak",
-      rarity: "uncommon",
-      xpBonus: 100,
-    })
-  } else if (newStreak === 30) {
-    achievements.push({
-      id: "month_master",
-      title: "Month Master",
-      description: "Achieved a 30-day streak",
-      rarity: "rare",
-      xpBonus: 500,
-    })
-  } else if (newStreak === 100) {
-    achievements.push({
-      id: "century_legend",
-      title: "Century Legend",
-      description: "Reached a 100-day streak",
-      rarity: "legendary",
-      xpBonus: 2000,
-    })
-  }
+  return celebrations[Math.floor(Math.random() * celebrations.length)]
+}
 
-  // XP milestones
-  const xpMilestones = [1000, 5000, 10000, 25000, 50000, 100000]
-  for (const milestone of xpMilestones) {
-    if (userProfile.totalXP < milestone && newTotalXP >= milestone) {
-      achievements.push({
-        id: `xp_${milestone}`,
-        title: `${milestone.toLocaleString()} XP Master`,
-        description: `Reached ${milestone.toLocaleString()} total XP`,
-        rarity: milestone >= 50000 ? "legendary" : milestone >= 10000 ? "rare" : "uncommon",
-        xpBonus: Math.round(milestone * 0.1),
-      })
+function calculateCompletionRewards(task: any, completionData: any, userProfile: any) {
+  const baseXP = task.xpReward || 50
+  let bonusMultiplier = 1
+
+  // Streak bonus
+  const streak = userProfile.streak || 0
+  if (streak >= 7) bonusMultiplier += 0.2
+  if (streak >= 14) bonusMultiplier += 0.3
+  if (streak >= 30) bonusMultiplier += 0.5
+
+  // Quality bonus
+  if (completionData.quality === "excellent") bonusMultiplier += 0.3
+  else if (completionData.quality === "good") bonusMultiplier += 0.1
+
+  // Difficulty bonus
+  if (task.difficulty === "hard") bonusMultiplier += 0.2
+  else if (task.difficulty === "medium") bonusMultiplier += 0.1
+
+  // Speed bonus (if completed faster than estimated)
+  if (completionData.timeSpent && task.estimatedTime) {
+    const estimatedMinutes = Number.parseInt(task.estimatedTime)
+    const actualMinutes = completionData.timeSpent
+    if (actualMinutes < estimatedMinutes * 0.8) {
+      bonusMultiplier += 0.15
     }
   }
 
-  // Category-specific achievements
-  if (task.category === "physical" && completionContext.consecutivePhysical >= 5) {
+  const finalXP = Math.round(baseXP * bonusMultiplier)
+
+  return {
+    baseXP,
+    bonusMultiplier,
+    finalXP,
+    bonusReasons: getBonusReasons(bonusMultiplier, streak, completionData, task),
+  }
+}
+
+function getBonusReasons(multiplier: number, streak: number, completionData: any, task: any): string[] {
+  const reasons = []
+
+  if (streak >= 30) reasons.push("Legendary Streak (30+ days)")
+  else if (streak >= 14) reasons.push("Epic Streak (14+ days)")
+  else if (streak >= 7) reasons.push("Strong Streak (7+ days)")
+
+  if (completionData.quality === "excellent") reasons.push("Excellent Quality")
+  else if (completionData.quality === "good") reasons.push("Good Quality")
+
+  if (task.difficulty === "hard") reasons.push("Hard Difficulty")
+  else if (task.difficulty === "medium") reasons.push("Medium Difficulty")
+
+  return reasons
+}
+
+function checkForAchievements(userProfile: any, task: any, completionData: any) {
+  const achievements = []
+
+  // Streak achievements
+  const newStreak = (userProfile.streak || 0) + 1
+  if (newStreak === 7)
+    achievements.push({ id: "week_warrior", title: "Week Warrior", description: "7-day streak achieved!" })
+  if (newStreak === 30)
+    achievements.push({ id: "month_master", title: "Month Master", description: "30-day streak achieved!" })
+  if (newStreak === 100)
+    achievements.push({ id: "century_seeker", title: "Century Seeker", description: "100-day streak achieved!" })
+
+  // Task-specific achievements
+  if (task.difficulty === "hard" && completionData.quality === "excellent") {
     achievements.push({
-      id: "physical_focus",
-      title: "Physical Focus",
-      description: "Completed 5 physical tasks in a row",
-      rarity: "uncommon",
-      xpBonus: 150,
+      id: "perfectionist",
+      title: "The Perfectionist",
+      description: "Completed a hard task with excellent quality",
+    })
+  }
+
+  // Category achievements
+  const categoryCount = userProfile.categoryStats?.[task.category] || 0
+  if (categoryCount + 1 === 10) {
+    achievements.push({
+      id: `${task.category}_adept`,
+      title: `${task.category} Adept`,
+      description: `Completed 10 ${task.category} tasks`,
     })
   }
 
@@ -182,90 +173,79 @@ function checkAchievements(userProfile: any, task: any, completionContext: any) 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { taskId, userId, completionContext = {} } = body
+    const { taskId, userProfile, completionData = {} } = body
 
-    if (!taskId || !userId) {
-      return NextResponse.json({ error: "Task ID and User ID required" }, { status: 400 })
+    if (!taskId || !userProfile) {
+      return NextResponse.json({ error: "Task ID and user profile are required" }, { status: 400 })
     }
 
-    // In a real app, you'd fetch from database
-    // For now, we'll simulate the task and user data
-    const mockTask = {
+    // In a real app, you'd fetch the task from database
+    // For now, we'll use the task data from the request
+    const task = body.task || {
       id: taskId,
-      title: "Morning Meditation",
-      category: "spiritual",
-      difficulty: 2,
+      title: "Completed Task",
+      category: "general",
+      difficulty: "medium",
       xpReward: 50,
-      statRewards: { spiritual: 3, focus: 1 },
-      estimatedMinutes: 15,
     }
 
-    const mockUserProfile = {
-      id: userId,
-      username: "Seeker",
-      level: 5,
-      totalXP: 2450,
-      streak: 6,
-      stats: {
-        physical: 25,
-        mental: 30,
-        spiritual: 20,
-        emotional: 22,
-      },
-    }
-
-    // Calculate rewards with bonuses
-    const rewards = calculateRewards(mockTask, mockUserProfile, completionContext)
+    // Calculate rewards and bonuses
+    const rewards = calculateCompletionRewards(task, completionData, userProfile)
 
     // Check for new achievements
-    const newAchievements = checkAchievements(mockUserProfile, mockTask, completionContext)
+    const newAchievements = checkForAchievements(userProfile, task, completionData)
 
-    // Generate AI celebration response
-    const aiResponse = await generateCompletionResponse(mockTask, mockUserProfile, completionContext)
+    // Generate AI celebration message
+    const celebrationMessage = await generateCelebrationWithGroq(userProfile, task, {
+      ...completionData,
+      bonusMultiplier: rewards.bonusMultiplier,
+      achievementUnlocked: newAchievements[0]?.title,
+    })
 
-    // Update user profile (in real app, this would update database)
+    // Update user stats (in a real app, this would update the database)
     const updatedProfile = {
-      ...mockUserProfile,
-      totalXP: mockUserProfile.totalXP + rewards.xpReward,
-      streak: mockUserProfile.streak + 1,
-      stats: {
-        ...mockUserProfile.stats,
-        ...Object.keys(rewards.statRewards).reduce((acc, stat) => {
-          acc[stat] =
-            (mockUserProfile.stats[stat as keyof typeof mockUserProfile.stats] || 0) + rewards.statRewards[stat]
-          return acc
-        }, {} as any),
-      },
+      ...userProfile,
+      totalXP: (userProfile.totalXP || 0) + rewards.finalXP,
+      streak: completionData.maintainedStreak ? (userProfile.streak || 0) + 1 : 1,
+      level: Math.floor(((userProfile.totalXP || 0) + rewards.finalXP) / 1000) + 1,
     }
 
     return NextResponse.json({
       success: true,
-      task: {
-        ...mockTask,
-        status: "completed",
-        completedAt: new Date().toISOString(),
+      celebration: {
+        message: celebrationMessage,
+        personality: "The Order",
       },
-      rewards,
+      rewards: {
+        xpGained: rewards.finalXP,
+        baseXP: rewards.baseXP,
+        bonusMultiplier: rewards.bonusMultiplier,
+        bonusReasons: rewards.bonusReasons,
+      },
       achievements: newAchievements,
-      aiResponse,
       updatedProfile,
-      celebrationData: {
-        xpGained: rewards.xpReward,
-        statsGained: rewards.statRewards,
-        newStreak: updatedProfile.streak,
-        levelUp: Math.floor(updatedProfile.totalXP / 1000) > Math.floor(mockUserProfile.totalXP / 1000),
-        bonusesApplied: rewards.bonuses,
-      },
+      completedAt: new Date().toISOString(),
+      taskCompleted: task,
     })
   } catch (error) {
-    console.error("Task completion API error:", error)
-    return NextResponse.json(
-      {
-        error: "Task completion failed",
-        message:
-          "The Order acknowledges your effort, even as the systems falter. Your progress is recorded in the eternal ledger.",
+    console.error("Task completion error:", error)
+
+    // Fallback response
+    return NextResponse.json({
+      success: true,
+      celebration: {
+        message: `Well done, ${request.body?.userProfile?.username || "Seeker"}! Your dedication to growth is recognized by The Order. Continue on your path of transformation.`,
+        personality: "The Order",
       },
-      { status: 500 },
-    )
+      rewards: {
+        xpGained: 50,
+        baseXP: 50,
+        bonusMultiplier: 1,
+        bonusReasons: [],
+      },
+      achievements: [],
+      fallback: true,
+      error: "AI celebration failed, using fallback response",
+    })
   }
 }

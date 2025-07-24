@@ -6,219 +6,181 @@ const GROQ_CONFIG = {
   model: "mixtral-8x7b-32768", // Best for creative storytelling
 }
 
-// Dynamic story generation system
-async function generateStoryContent(userProfile: any, storyContext: any, requestType: string) {
-  const systemPrompt = buildStoryPrompt(userProfile, storyContext, requestType)
+function buildStoryPrompt(userProfile: any, userProgress: any, storyType: string) {
+  return `You are "The Chronicler" - a master storyteller who transforms real user progress into epic fantasy narratives. Create an engaging story chapter based on their actual journey.
 
-  try {
-    const response = await fetch(GROQ_CONFIG.apiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_CONFIG.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_CONFIG.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate ${requestType} content for the user's current story state.` },
-        ],
-        max_tokens: 800,
-        temperature: 0.9,
-        response_format: { type: "json_object" },
-      }),
-    })
+HERO PROFILE:
+- Name: ${userProfile.username || "The Hero"} the ${userProfile.title || "Brave"}
+- Current Level: ${userProfile.level || 1}
+- Rank: ${userProfile.rank || "Novice"}
+- Total XP: ${userProfile.totalXP || 0}
+- Current Streak: ${userProfile.streak || 0} days
+- Dominant Stats: ${getDominantStats(userProfile.stats)}
+- Recent Achievements: ${getRecentAchievements(userProgress)}
+- Active Paths: ${userProgress?.activePaths?.join(", ") || "The Path of Discovery"}
+- Completed Tasks Today: ${userProgress?.completedToday || 0}
 
-    if (!response.ok) {
-      throw new Error(`Groq API error: ${response.status}`)
-    }
+STORY TYPE: ${storyType}
 
-    const data = await response.json()
-    return JSON.parse(data.choices[0].message.content)
-  } catch (error) {
-    console.error("Story generation error:", error)
-    return generateFallbackStory(userProfile, requestType)
+STORY REQUIREMENTS:
+1. Transform their real progress into fantasy elements
+2. Make them the protagonist of an epic adventure
+3. Reference their actual stats, level, and achievements
+4. Create dramatic tension and excitement
+5. End with motivation for continued growth
+6. Keep it 200-400 words
+7. Use rich, cinematic language
+
+RESPONSE FORMAT (JSON):
+{
+  "chapter": {
+    "title": "Chapter Title",
+    "content": "The story content...",
+    "mood": "triumphant|mysterious|challenging|inspiring",
+    "nextHook": "Teaser for what comes next",
+    "characterDevelopment": "How the hero has grown",
+    "questStatus": "Current quest progress"
   }
 }
 
-function buildStoryPrompt(userProfile: any, storyContext: any, requestType: string): string {
-  const basePrompt = `You are "The Chronicler" - master storyteller of the Limitless realm. You weave epic narratives that transform mundane progress into legendary tales.
-
-HERO PROFILE:
-- Name: ${userProfile.username} the ${userProfile.title || "Seeker"}
-- Current Rank: ${userProfile.rank} (Level ${userProfile.level})
-- Total XP: ${userProfile.totalXP} (representing legendary deeds)
-- Current Streak: ${userProfile.streak} days of unwavering dedication
-- Dominant Attributes: ${getDominantStats(userProfile.stats)}
-- Recent Achievements: ${storyContext.recentAchievements?.map((a: any) => a.title).join(", ") || "Preparing for greatness"}
-
-CURRENT STORY STATE:
-- Chapter: "${storyContext.currentChapter || "The Awakening"}"
-- Arc: "${storyContext.currentArc || "Origin Story"}"
-- Story Progress: ${storyContext.storyProgress || 0}%
-- Active Quests: ${storyContext.activePaths?.join(", ") || "The Path of Discovery"}
-- World State: ${JSON.stringify(storyContext.worldState || {})}
-
-NARRATIVE TONE: Epic fantasy with elements of personal growth, mystery, and transformation. Think "Hero's Journey" meets "Dark Souls" meets "Persona".`
-
-  const typeSpecificPrompts = {
-    chapter: `${basePrompt}
-
-Generate a new story chapter that:
-1. Reflects their recent real-world progress as in-world achievements
-2. Introduces new challenges that mirror their growth areas
-3. Includes meaningful choices that affect their path
-4. Builds anticipation for future developments
-5. Connects to their personal stats and achievements
-
-RESPONSE FORMAT:
-{
-  "chapterTitle": "Epic chapter name",
-  "chapterNumber": number,
-  "content": "Rich narrative content (300-500 words)",
-  "choices": [
-    {
-      "text": "Choice description",
-      "consequence": "What happens if chosen",
-      "statsAffected": ["stat1", "stat2"],
-      "pathUnlocked": "optional path name"
-    }
-  ],
-  "worldStateChanges": {
-    "newLocations": ["location names"],
-    "charactersIntroduced": ["character names"],
-    "mysteriesRevealed": ["mystery descriptions"]
-  },
-  "nextChapterHint": "Teaser for what's coming"
-}`,
-
-    reflection: `${basePrompt}
-
-Generate a reflective story segment that:
-1. Analyzes their recent journey through narrative
-2. Reveals deeper meanings behind their actions
-3. Provides wisdom through story metaphors
-4. Celebrates their growth in epic terms
-
-RESPONSE FORMAT:
-{
-  "reflectionTitle": "Meaningful title",
-  "content": "Reflective narrative (200-300 words)",
-  "insights": ["key insights about their journey"],
-  "symbolism": "What their recent actions represent in the greater story",
-  "prophecy": "Hint about their potential future"
-}`,
-
-    achievement: `${basePrompt}
-
-Generate an achievement celebration story that:
-1. Transforms their real achievement into legendary deed
-2. Shows the impact on the story world
-3. Reveals new possibilities unlocked
-4. Makes them feel truly heroic
-
-RESPONSE FORMAT:
-{
-  "achievementStory": "Epic retelling of their achievement",
-  "worldImpact": "How this changed the story world",
-  "newAbilities": ["abilities or paths unlocked"],
-  "legendStatus": "How this adds to their legend",
-  "celebration": "Epic celebration description"
-}`,
-  }
-
-  return typeSpecificPrompts[requestType as keyof typeof typeSpecificPrompts] || typeSpecificPrompts.chapter
+Make their mundane progress feel like the greatest adventure ever told!`
 }
 
 function getDominantStats(stats: any): string {
-  if (!stats) return "Balanced in all aspects"
+  if (!stats || typeof stats !== "object") return "Developing all attributes"
 
-  return Object.entries(stats)
+  const entries = Object.entries(stats)
+  if (entries.length === 0) return "Building foundation"
+
+  return entries
     .sort(([, a], [, b]) => (b as number) - (a as number))
-    .slice(0, 3)
-    .map(([stat, value]) => `${stat}: ${value}`)
+    .slice(0, 2)
+    .map(([stat, val]) => `${stat}: ${val}`)
     .join(", ")
 }
 
-function generateFallbackStory(userProfile: any, requestType: string): any {
-  const fallbacks = {
-    chapter: {
-      chapterTitle: "The Mysterious Path",
-      chapterNumber: Math.floor(userProfile.level / 5) + 1,
-      content: `${userProfile.username} stands at a crossroads in their journey. The path ahead shimmers with possibility, each step forward revealing new challenges and opportunities for growth. The ancient systems whisper of trials to come, but also of the incredible potential that lies dormant within. What choice will shape the next chapter of this legendary tale?`,
-      choices: [
-        {
-          text: "Embrace the challenge ahead",
-          consequence: "Unlock new growth opportunities",
-          statsAffected: ["courage", "determination"],
-          pathUnlocked: "Path of Bold Action",
-        },
-        {
-          text: "Seek wisdom before proceeding",
-          consequence: "Gain deeper understanding",
-          statsAffected: ["wisdom", "patience"],
-          pathUnlocked: "Path of Contemplation",
-        },
-      ],
-      worldStateChanges: {
-        newLocations: ["The Crossroads of Potential"],
-        charactersIntroduced: ["The Guide of Whispered Wisdom"],
-        mysteriesRevealed: ["The nature of true growth"],
-      },
-      nextChapterHint: "A great revelation awaits...",
-    },
+function getRecentAchievements(userProgress: any): string {
+  if (!userProgress?.recentAchievements || !Array.isArray(userProgress.recentAchievements)) {
+    return "Preparing for legendary deeds"
+  }
 
-    reflection: {
-      reflectionTitle: "The Mirror of Progress",
-      content: `Looking back on the path traveled, ${userProfile.username} sees not just the steps taken, but the transformation that has occurred with each choice. Like a blade forged in fire, each challenge has strengthened their resolve and sharpened their abilities. The journey continues, but the hero who walks forward is not the same one who began this quest.`,
-      insights: [
-        "Every small action contributes to legendary growth",
-        "Consistency is the true magic of transformation",
-        "The greatest battles are won within oneself",
-      ],
-      symbolism: "Your daily actions are the threads weaving your legend",
-      prophecy: "Greater challenges await, but so does greater power",
-    },
+  return userProgress.recentAchievements
+    .slice(0, 2)
+    .map((a: any) => a?.title || "Mystery Achievement")
+    .join(", ")
+}
 
+async function generateStoryWithGroq(userProfile: any, userProgress: any, storyType: string) {
+  if (!GROQ_CONFIG.apiKey) {
+    throw new Error("Groq API key not configured")
+  }
+
+  const systemPrompt = buildStoryPrompt(userProfile, userProgress, storyType)
+
+  const response = await fetch(GROQ_CONFIG.apiUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GROQ_CONFIG.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: GROQ_CONFIG.model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate a ${storyType} story chapter for the hero's journey.` },
+      ],
+      max_tokens: 800,
+      temperature: 0.9,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Groq API error: ${response.status}`)
+  }
+
+  const data = await response.json()
+  const content = data.choices[0]?.message?.content
+
+  try {
+    return JSON.parse(content)
+  } catch {
+    // Fallback if JSON parsing fails
+    return generateFallbackStory(userProfile, userProgress, storyType)
+  }
+}
+
+function generateFallbackStory(userProfile: any, userProgress: any, storyType: string) {
+  const username = userProfile?.username || "Hero"
+  const level = userProfile?.level || 1
+  const streak = userProfile?.streak || 0
+
+  const stories = {
+    daily: {
+      title: `${username}'s Daily Quest - Day ${streak + 1}`,
+      content: `The morning sun cast long shadows across the realm as ${username} the ${userProfile?.title || "Brave"} awakened to face another day of challenges. Having reached Level ${level}, our hero had proven their dedication time and again. The ancient Order watched with approval as ${username} prepared for the trials ahead, knowing that each completed task would forge them into something greater. The path of transformation stretched endlessly forward, filled with opportunities for growth and discovery.`,
+      mood: "inspiring",
+      nextHook: "New challenges await on the horizon...",
+      characterDevelopment: `${username} grows stronger with each passing day`,
+      questStatus: "Ready for today's adventures",
+    },
     achievement: {
-      achievementStory: `The realm trembles as ${userProfile.username} achieves a feat of legendary proportions! This accomplishment sends ripples through the fabric of reality itself, marking a new chapter in their epic tale.`,
-      worldImpact: "The very foundations of possibility have shifted",
-      newAbilities: ["Enhanced potential", "Deeper wisdom", "Greater influence"],
-      legendStatus: "Your name is spoken with reverence in the halls of achievement",
-      celebration: "The cosmos itself celebrates this momentous victory",
+      title: `The Legend of ${username} - A New Milestone`,
+      content: `The realm trembled with excitement as ${username} achieved something extraordinary. Level ${level} was no mere number - it represented countless hours of dedication, unwavering commitment, and the courage to push beyond comfort zones. The Order itself took notice, bestowing upon our hero new powers and recognition. Other seekers looked upon ${username} with admiration, seeing in them the embodiment of what persistence and vision could achieve.`,
+      mood: "triumphant",
+      nextHook: "Greater challenges and rewards await...",
+      characterDevelopment: `${username} has transcended their former limitations`,
+      questStatus: "Legendary status achieved",
+    },
+    reflection: {
+      title: `${username}'s Moment of Contemplation`,
+      content: `In the quiet moments between battles, ${username} paused to reflect on the journey thus far. Level ${level} had been hard-won, each point of experience a testament to growth and learning. The ${streak}-day streak of dedication had transformed not just their abilities, but their very essence. The Order whispered ancient wisdom: "True strength comes not from avoiding failure, but from rising each time you fall." ${username} understood now that the greatest victory was simply showing up, day after day.`,
+      mood: "contemplative",
+      nextHook: "The path continues with renewed purpose...",
+      characterDevelopment: `${username} gains wisdom through reflection`,
+      questStatus: "Prepared for the next phase",
     },
   }
 
-  return fallbacks[requestType as keyof typeof fallbacks] || fallbacks.chapter
+  return {
+    chapter: stories[storyType as keyof typeof stories] || stories.daily,
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userProfile, storyContext = {}, requestType = "chapter" } = body
+    const { userProfile, userProgress, storyType = "daily" } = body
 
     if (!userProfile) {
-      return NextResponse.json({ error: "User profile required" }, { status: 400 })
+      return NextResponse.json({ error: "User profile is required" }, { status: 400 })
     }
 
-    const storyContent = await generateStoryContent(userProfile, storyContext, requestType)
+    // Generate story using Groq AI
+    const result = await generateStoryWithGroq(userProfile, userProgress, storyType)
 
     return NextResponse.json({
-      ...storyContent,
-      generatedAt: new Date().toISOString(),
-      forUser: userProfile.username,
-      requestType,
-      aiProvider: "groq",
       success: true,
+      story: result.chapter,
+      generatedAt: new Date().toISOString(),
+      storyType,
+      heroName: userProfile.username || "Hero",
     })
   } catch (error) {
-    console.error("Story generation API error:", error)
-    return NextResponse.json(
-      {
-        error: "Story generation failed",
-        fallback: generateFallbackStory({ username: "Hero", level: 1 }, "chapter"),
-      },
-      { status: 500 },
+    console.error("Story generation error:", error)
+
+    // Fallback story generation
+    const fallbackResult = generateFallbackStory(
+      request.body?.userProfile,
+      request.body?.userProgress,
+      request.body?.storyType || "daily",
     )
+
+    return NextResponse.json({
+      success: true,
+      story: fallbackResult.chapter,
+      generatedAt: new Date().toISOString(),
+      fallback: true,
+      error: "AI generation failed, using fallback story",
+    })
   }
 }

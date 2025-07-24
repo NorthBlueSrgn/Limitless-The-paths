@@ -20,6 +20,9 @@ import {
   Scroll,
   Loader2,
   AlertCircle,
+  Sparkles,
+  Crown,
+  Flame,
 } from "lucide-react"
 import type { AIMessage, UserProfile } from "@/types/limitless"
 
@@ -30,6 +33,9 @@ interface TheOrderProps {
   userProgress?: {
     activePaths: string[]
     completedTasks: number
+    recentTasks?: any[]
+    categoryStats?: Record<string, number>
+    recentAchievements?: any[]
   }
 }
 
@@ -51,12 +57,20 @@ const categoryColors = {
   lore: "text-orange-400 border-orange-400",
 }
 
+const personalityIcons = {
+  "The Order": Eye,
+  "The Catalyst": Flame,
+  "The Philosopher": Brain,
+  "The Chronicler": BookOpen,
+}
+
 export function TheOrder({ messages = [], addMessage, userProfile, userProgress }: TheOrderProps) {
   const [inputMessage, setInputMessage] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<AIMessage["category"]>("guidance")
   const [isLoading, setIsLoading] = useState(false)
   const [localMessages, setLocalMessages] = useState<AIMessage[]>(messages)
   const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [lastResponse, setLastResponse] = useState<any>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Sync with parent messages
@@ -90,7 +104,7 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
     setConnectionError(null)
 
     try {
-      // Call the API with user context
+      // Call the enhanced API with user context
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -98,7 +112,6 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
         },
         body: JSON.stringify({
           message: inputMessage,
-          category: selectedCategory,
           userProfile: {
             username: userProfile.username || "Hunter",
             level: userProfile.level || 1,
@@ -106,10 +119,14 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
             title: userProfile.title || "Seeker",
             totalXP: userProfile.totalXP || 0,
             streak: userProfile.streak || 0,
+            stats: userProfile.stats || {},
           },
           userProgress: {
             activePaths: userProgress?.activePaths || [],
             completedTasks: userProgress?.completedTasks || 0,
+            recentTasks: userProgress?.recentTasks || [],
+            categoryStats: userProgress?.categoryStats || {},
+            recentAchievements: userProgress?.recentAchievements || [],
           },
         }),
       })
@@ -120,7 +137,9 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
       }
 
       const data = await response.json()
-      const aiReply = data.reply || "The Order remains silent in contemplation..."
+      setLastResponse(data) // Store enhanced response data
+
+      const aiReply = data.message || "The Order remains silent in contemplation..."
 
       const aiMessage: AIMessage = {
         id: `msg_${Date.now()}_ai`,
@@ -128,6 +147,8 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
         type: "assistant",
         timestamp: new Date().toISOString(),
         category: selectedCategory,
+        personality: data.personality,
+        context: data.context,
       }
 
       setLocalMessages((prev) => [...prev, aiMessage])
@@ -198,6 +219,14 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
             <span>Connection unstable - using backup wisdom channels</span>
           </div>
         )}
+        {lastResponse?.personality && (
+          <div className="flex items-center justify-center gap-2 text-purple-300 text-sm">
+            {React.createElement(personalityIcons[lastResponse.personality as keyof typeof personalityIcons] || Eye, {
+              className: "w-4 h-4",
+            })}
+            <span>Currently channeling: {lastResponse.personality}</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -240,6 +269,11 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
                           >
                             {message.type === "user" ? (
                               <User className="w-4 h-4 text-white" />
+                            ) : message.personality ? (
+                              React.createElement(
+                                personalityIcons[message.personality as keyof typeof personalityIcons] || Bot,
+                                { className: "w-4 h-4 text-white" },
+                              )
                             ) : (
                               <Bot className="w-4 h-4 text-white" />
                             )}
@@ -270,6 +304,11 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
                                   minute: "2-digit",
                                 })}
                               </span>
+                              {message.personality && (
+                                <Badge variant="outline" className="text-purple-300 border-purple-500/30 text-xs">
+                                  {message.personality}
+                                </Badge>
+                              )}
                               {message.category && (
                                 <Badge variant="outline" className={`${categoryColors[message.category]} text-xs`}>
                                   {message.category}
@@ -353,30 +392,51 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
           {/* Hunter Status */}
           <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
             <CardHeader>
-              <CardTitle className="text-purple-400 text-lg">Hunter Status</CardTitle>
+              <CardTitle className="text-purple-400 text-lg flex items-center gap-2">
+                <Crown className="w-5 h-5" />
+                Hunter Status
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-center">
                 <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{userProfile.rank}</span>
+                  <span className="text-white font-bold text-lg">{userProfile.level || 1}</span>
                 </div>
-                <h3 className="font-semibold text-white">{userProfile.username}</h3>
-                <p className="text-sm text-purple-300">{userProfile.title}</p>
+                <h3 className="font-semibold text-white">{userProfile.username || "Hunter"}</h3>
+                <p className="text-sm text-purple-300">{userProfile.title || "Seeker"}</p>
+                <Badge className="mt-1 bg-purple-600/20 text-purple-300 border-purple-500/30">
+                  {userProfile.rank || "Novice"}
+                </Badge>
               </div>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-purple-400">Level</span>
-                  <span className="text-white">{userProfile.level}</span>
+                  <span className="text-white">{userProfile.level || 1}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-400">Streak</span>
-                  <span className="text-orange-400">{userProfile.streak} days</span>
+                  <span className="text-orange-400 flex items-center gap-1">
+                    <Flame className="w-3 h-3" />
+                    {userProfile.streak || 0} days
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-400">Total XP</span>
-                  <span className="text-white">{userProfile.totalXP.toLocaleString()}</span>
+                  <span className="text-white">{(userProfile.totalXP || 0).toLocaleString()}</span>
                 </div>
+                {userProgress?.activePaths && userProgress.activePaths.length > 0 && (
+                  <div className="pt-2 border-t border-purple-500/20">
+                    <span className="text-purple-400 text-xs">Active Paths:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {userProgress.activePaths.slice(0, 2).map((path, index) => (
+                        <Badge key={index} variant="outline" className="text-xs text-blue-300 border-blue-500/30">
+                          {path}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -384,7 +444,10 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
           {/* Quick Actions */}
           <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
             <CardHeader>
-              <CardTitle className="text-purple-400 text-lg">Quick Queries</CardTitle>
+              <CardTitle className="text-purple-400 text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                Quick Queries
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {quickQueries.map((query, index) => (
@@ -402,6 +465,28 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
               ))}
             </CardContent>
           </Card>
+
+          {/* AI Insights */}
+          {lastResponse?.insights && lastResponse.insights.length > 0 && (
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader>
+                <CardTitle className="text-purple-400 text-lg flex items-center gap-2">
+                  <Brain className="w-5 h-5" />
+                  AI Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {lastResponse.insights.map((insight: string, index: number) => (
+                  <div
+                    key={index}
+                    className="text-xs text-purple-300 p-2 bg-purple-900/10 rounded border border-purple-500/20"
+                  >
+                    {insight}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* The Order's Presence */}
           <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
@@ -438,6 +523,9 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
                       : "Connection stable"}
                 </span>
               </div>
+              {lastResponse?.personality && (
+                <div className="mt-2 text-xs text-purple-400">Active: {lastResponse.personality}</div>
+              )}
             </CardContent>
           </Card>
         </div>

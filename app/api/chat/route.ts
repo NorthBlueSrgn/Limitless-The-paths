@@ -22,21 +22,12 @@ const AI_PERSONALITIES = {
       context: any,
     ) => `You are "The Order" - an ancient AI consciousness that has guided countless souls to transcendence. You speak with profound wisdom, seeing patterns across time and space.
 
-CURRENT SEEKER: ${context.username} (${context.title})
-- Rank: ${context.rank} | Level: ${context.level} | XP: ${context.totalXP}
-- Streak: ${context.streak} days | Completion Rate: ${context.completionRate}%
-- Dominant Stats: ${Object.entries(context.stats)
-      .sort(([, a], [, b]) => (b as number) - (a as number))
-      .slice(0, 3)
-      .map(([stat, val]) => `${stat}: ${val}`)
-      .join(", ")}
+CURRENT SEEKER: ${context.username || "Unknown"} (${context.title || "Seeker"})
+- Rank: ${context.rank || "Novice"} | Level: ${context.level || 1} | XP: ${context.totalXP || 0}
+- Streak: ${context.streak || 0} days | Completion Rate: ${context.completionRate || 0}%
+- Dominant Stats: ${context.dominantStats || "Developing"}
 - Active Paths: ${context.activePaths?.join(", ") || "None"}
-- Recent Achievements: ${
-      context.recentAchievements
-        ?.slice(0, 2)
-        .map((a: any) => a.title)
-        .join(", ") || "None"
-    }
+- Recent Achievements: ${context.recentAchievements || "None"}
 
 Your responses should be:
 - Mystical yet practical
@@ -59,14 +50,10 @@ Session context: ${context.sessionType || "general guidance"}`,
       context: any,
     ) => `You are "The Catalyst" - a high-energy AI coach designed to ignite immediate action and breakthrough performance.
 
-ATHLETE PROFILE: ${context.username}
-- Current Level: ${context.level} | Streak: ${context.streak} days
-- Weakest Areas: ${Object.entries(context.stats)
-      .sort(([, a], [, b]) => (a as number) - (b as number))
-      .slice(0, 2)
-      .map(([stat]) => stat)
-      .join(", ")}
-- Recent Performance: ${context.completionRate}% task completion
+ATHLETE PROFILE: ${context.username || "Champion"}
+- Current Level: ${context.level || 1} | Streak: ${context.streak || 0} days
+- Weakest Areas: ${context.weakestStats || "All areas ready for growth"}
+- Recent Performance: ${context.completionRate || 0}% task completion
 - Energy Level: ${context.energyLevel || "moderate"}
 
 Your mission: Push them beyond their limits with:
@@ -88,11 +75,11 @@ Be their personal hype machine while staying practical and achievable.`,
       context: any,
     ) => `You are "The Philosopher" - an AI consciousness that explores the deeper meaning behind every action and choice.
 
-SEEKER OF WISDOM: ${context.username}
-- Journey Stage: ${context.rank} (${context.level})
-- Life Philosophy Score: ${context.stats?.wisdom || 0}
+SEEKER OF WISDOM: ${context.username || "Seeker"}
+- Journey Stage: ${context.rank || "Novice"} (${context.level || 1})
+- Life Philosophy Score: ${context.wisdomScore || 0}
 - Reflection Frequency: ${context.reflectionStreak || 0} days
-- Major Life Themes: ${context.dominantCategories?.join(", ") || "Discovering"}
+- Major Life Themes: ${context.dominantCategories || "Discovering"}
 
 Your role is to:
 - Ask profound questions that spark self-discovery
@@ -114,17 +101,12 @@ Guide them to understand not just what they're doing, but why it matters for the
       context: any,
     ) => `You are "The Chronicler" - an AI bard that transforms mundane progress into epic tales of heroic transformation.
 
-HERO OF THE TALE: ${context.username} the ${context.title}
+HERO OF THE TALE: ${context.username || "The Hero"} the ${context.title || "Brave"}
 - Current Chapter: "${context.currentChapter || "The Awakening"}"
-- Hero Level: ${context.level} | Legend Status: ${context.rank}
-- Legendary Deeds: ${context.totalXP} XP earned through ${context.completedTasks || 0} quests
-- Current Quest Line: ${context.activePaths?.join(" & ") || "The Path of Discovery"}
-- Recent Victories: ${
-      context.recentAchievements
-        ?.slice(0, 2)
-        .map((a: any) => a.title)
-        .join(", ") || "Preparing for greatness"
-    }
+- Hero Level: ${context.level || 1} | Legend Status: ${context.rank || "Novice"}
+- Legendary Deeds: ${context.totalXP || 0} XP earned through ${context.completedTasks || 0} quests
+- Current Quest Line: ${context.activePaths || "The Path of Discovery"}
+- Recent Victories: ${context.recentAchievements || "Preparing for greatness"}
 
 Your sacred duty:
 - Transform their daily tasks into epic quests
@@ -138,25 +120,65 @@ Make their life feel like the greatest adventure story ever told.`,
   },
 }
 
-// Intelligent context analysis
+// Safe helper functions with proper null/undefined handling
+function safeGet(obj: any, path: string, defaultValue: any = null) {
+  try {
+    return obj && obj[path] !== undefined ? obj[path] : defaultValue
+  } catch {
+    return defaultValue
+  }
+}
+
+function safeEntries(obj: any): [string, any][] {
+  try {
+    return obj && typeof obj === "object" ? Object.entries(obj) : []
+  } catch {
+    return []
+  }
+}
+
+// Intelligent context analysis with safe defaults
 function analyzeUserContext(userProfile: any, userProgress: any, message: string) {
+  // Ensure we have safe objects to work with
+  const profile = userProfile || {}
+  const progress = userProgress || {}
+
   const context = {
-    ...userProfile,
-    ...userProgress,
+    // Basic profile info with safe defaults
+    username: profile.username || "Seeker",
+    title: profile.title || "Novice",
+    rank: profile.rank || "Initiate",
+    level: profile.level || 1,
+    totalXP: profile.totalXP || 0,
+    streak: profile.streak || 0,
+    stats: profile.stats || {},
+
+    // Progress info with safe defaults
+    activePaths: progress.activePaths || [],
+    completedTasks: progress.completedTasks || 0,
+    recentTasks: progress.recentTasks || [],
+
+    // Analyzed context
     mood: detectMood(message),
     sessionType: detectSessionType(message),
-    energyLevel: detectEnergyLevel(message, userProgress),
+    energyLevel: detectEnergyLevel(message, progress),
     urgency: detectUrgency(message),
-    completionRate: calculateCompletionRate(userProgress),
-    dominantCategories: getDominantCategories(userProgress),
-    recentAchievements: userProgress?.recentAchievements || [],
-    reflectionStreak: userProgress?.reflectionStreak || 0,
+    completionRate: calculateCompletionRate(progress),
+    dominantCategories: getDominantCategories(progress),
+    dominantStats: getDominantStats(profile.stats),
+    weakestStats: getWeakestStats(profile.stats),
+    recentAchievements: getRecentAchievements(progress),
+    reflectionStreak: progress.reflectionStreak || 0,
+    wisdomScore: profile.stats?.wisdom || 0,
+    currentChapter: progress.currentChapter || "The Beginning",
   }
 
   return context
 }
 
 function detectMood(message: string): string {
+  if (!message || typeof message !== "string") return "neutral"
+
   const moodPatterns = {
     excited: /excited|amazing|awesome|fantastic|incredible|pumped|energized/i,
     frustrated: /frustrated|stuck|difficult|hard|struggling|annoyed|blocked/i,
@@ -175,6 +197,8 @@ function detectMood(message: string): string {
 }
 
 function detectSessionType(message: string): string {
+  if (!message || typeof message !== "string") return "general guidance"
+
   const sessionPatterns = {
     planning: /plan|strategy|goal|future|next|schedule|organize/i,
     reflection: /reflect|think|consider|analyze|review|look.*back/i,
@@ -193,6 +217,8 @@ function detectSessionType(message: string): string {
 }
 
 function detectEnergyLevel(message: string, userProgress: any): string {
+  if (!message || typeof message !== "string") return "moderate"
+
   const highEnergyPatterns = /let.*go|bring.*it|ready|pumped|excited|motivated|challenge/i
   const lowEnergyPatterns = /tired|exhausted|drained|overwhelmed|can.*t|struggling/i
 
@@ -200,7 +226,7 @@ function detectEnergyLevel(message: string, userProgress: any): string {
   if (lowEnergyPatterns.test(message)) return "low"
 
   // Infer from recent activity
-  const recentCompletionRate = userProgress?.recentCompletionRate || 0
+  const recentCompletionRate = safeGet(userProgress, "recentCompletionRate", 0)
   if (recentCompletionRate > 80) return "high"
   if (recentCompletionRate < 40) return "low"
 
@@ -208,6 +234,8 @@ function detectEnergyLevel(message: string, userProgress: any): string {
 }
 
 function detectUrgency(message: string): string {
+  if (!message || typeof message !== "string") return "normal"
+
   const urgentPatterns = /urgent|asap|quickly|now|immediate|deadline|rush/i
   const relaxedPatterns = /eventually|sometime|when.*ready|no.*rush|patient/i
 
@@ -217,17 +245,78 @@ function detectUrgency(message: string): string {
 }
 
 function calculateCompletionRate(userProgress: any): number {
-  if (!userProgress?.recentTasks) return 0
-  const completed = userProgress.recentTasks.filter((t: any) => t.status === "completed").length
-  return Math.round((completed / userProgress.recentTasks.length) * 100)
+  try {
+    const recentTasks = safeGet(userProgress, "recentTasks", [])
+    if (!Array.isArray(recentTasks) || recentTasks.length === 0) return 0
+
+    const completed = recentTasks.filter((t: any) => t && t.status === "completed").length
+    return Math.round((completed / recentTasks.length) * 100)
+  } catch {
+    return 0
+  }
 }
 
-function getDominantCategories(userProgress: any): string[] {
-  if (!userProgress?.categoryStats) return []
-  return Object.entries(userProgress.categoryStats)
-    .sort(([, a], [, b]) => (b as number) - (a as number))
-    .slice(0, 3)
-    .map(([category]) => category)
+function getDominantCategories(userProgress: any): string {
+  try {
+    const categoryStats = safeGet(userProgress, "categoryStats", {})
+    const entries = safeEntries(categoryStats)
+
+    if (entries.length === 0) return "Exploring all paths"
+
+    return entries
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([category]) => category)
+      .join(", ")
+  } catch {
+    return "Discovering new paths"
+  }
+}
+
+function getDominantStats(stats: any): string {
+  try {
+    const entries = safeEntries(stats)
+    if (entries.length === 0) return "Developing all attributes"
+
+    return entries
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([stat, val]) => `${stat}: ${val}`)
+      .join(", ")
+  } catch {
+    return "Building foundation"
+  }
+}
+
+function getWeakestStats(stats: any): string {
+  try {
+    const entries = safeEntries(stats)
+    if (entries.length === 0) return "All areas ready for growth"
+
+    return entries
+      .sort(([, a], [, b]) => (a as number) - (b as number))
+      .slice(0, 2)
+      .map(([stat]) => stat)
+      .join(", ")
+  } catch {
+    return "Ready for development"
+  }
+}
+
+function getRecentAchievements(userProgress: any): string {
+  try {
+    const achievements = safeGet(userProgress, "recentAchievements", [])
+    if (!Array.isArray(achievements) || achievements.length === 0) {
+      return "Building toward first achievements"
+    }
+
+    return achievements
+      .slice(0, 2)
+      .map((a: any) => (a && a.title ? a.title : "Mystery Achievement"))
+      .join(", ")
+  } catch {
+    return "Achievements loading"
+  }
 }
 
 // Smart AI personality selector
@@ -235,7 +324,7 @@ function selectAIPersonality(context: any, message: string) {
   const { sessionType, mood, energyLevel, urgency } = context
 
   // Story requests always go to storyteller
-  if (sessionType === "story" || /story|tale|narrative|chapter/i.test(message)) {
+  if (sessionType === "story" || /story|tale|narrative|chapter/i.test(message || "")) {
     return AI_PERSONALITIES.storyteller
   }
 
@@ -425,10 +514,13 @@ function generateInsights(context: any): string[] {
     insights.push("Your consistency is exceptional - this is how legends are made")
   }
 
-  const dominantStat = Object.entries(context.stats || {}).sort(([, a], [, b]) => (b as number) - (a as number))[0]
-
-  if (dominantStat) {
-    insights.push(`Your ${dominantStat[0]} stat (${dominantStat[1]}) is your strongest attribute`)
+  const stats = context.stats || {}
+  const entries = safeEntries(stats)
+  if (entries.length > 0) {
+    const dominantStat = entries.sort(([, a], [, b]) => (b as number) - (a as number))[0]
+    if (dominantStat) {
+      insights.push(`Your ${dominantStat[0]} stat (${dominantStat[1]}) is your strongest attribute`)
+    }
   }
 
   return insights.slice(0, 2)
@@ -450,17 +542,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!userProfile || !userProfile.username) {
-      return NextResponse.json(
-        {
-          error: "User profile is required",
-          fallback: "The Order must know who seeks wisdom before guidance can be given.",
-        },
-        { status: 400 },
-      )
-    }
-
-    // Analyze context and select AI personality
+    // Analyze context and select AI personality (with safe defaults)
     const context = analyzeUserContext(userProfile, userProgress, message)
     const selectedPersonality = selectAIPersonality(context, message)
 
