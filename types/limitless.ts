@@ -176,8 +176,12 @@ export interface CodexEntry {
   unlocked: boolean
   requiredRank?: Rank
   requiredPath?: string
-  rarity: "Common" | "Rare" | "Epic" | "Legendary"
+  rarity: "Common" | "Rare" | "Epic" | "Legendary" | "Mythic"
   imageUrl?: string
+  powerLevel: number
+  source?: string
+  applications: string[]
+  unlockRequirements: string[]
 }
 
 export interface AIMessage {
