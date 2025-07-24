@@ -1,260 +1,271 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import React from "react"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Brain, Send, Eye, Crown, MessageCircle, Lightbulb, Target, BookOpen, Flame } from "lucide-react"
-import type { AIMessage } from "@/types/limitless"
+import { MessageCircle, Send, Bot, User, Zap, Brain, BookOpen, Target, Eye, Scroll } from "lucide-react"
+import type { AIMessage, UserProfile } from "@/types/limitless"
 
 interface TheOrderProps {
   messages: AIMessage[]
-  onSendMessage: (content: string, category?: AIMessage["category"]) => void
+  addMessage: (content: string, category?: AIMessage["category"]) => void
+  userProfile: UserProfile
 }
 
 const categoryIcons = {
   guidance: Target,
   story: BookOpen,
-  analysis: Eye,
-  challenge: Flame,
-  philosophy: Brain,
-  lore: Crown,
+  analysis: Brain,
+  challenge: Zap,
+  philosophy: Eye,
+  lore: Scroll,
 }
 
 const categoryColors = {
   guidance: "text-blue-400 border-blue-400",
   story: "text-purple-400 border-purple-400",
-  analysis: "text-yellow-400 border-yellow-400",
+  analysis: "text-green-400 border-green-400",
   challenge: "text-red-400 border-red-400",
-  philosophy: "text-green-400 border-green-400",
+  philosophy: "text-yellow-400 border-yellow-400",
   lore: "text-orange-400 border-orange-400",
 }
 
-const quickPrompts = [
-  { text: "Analyze my progress", category: "analysis" as const },
-  { text: "Give me a challenge", category: "challenge" as const },
-  { text: "Share some wisdom", category: "philosophy" as const },
-  { text: "Tell me a story", category: "story" as const },
-  { text: "Guide my next steps", category: "guidance" as const },
-  { text: "Reveal hidden lore", category: "lore" as const },
-]
-
-export function TheOrder({ messages, onSendMessage }: TheOrderProps) {
+export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderProps) {
   const [inputMessage, setInputMessage] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<AIMessage["category"]>("guidance")
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
-    }
-  }, [messages])
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
-      onSendMessage(inputMessage, selectedCategory)
+      addMessage(inputMessage, selectedCategory)
       setInputMessage("")
     }
   }
 
-  const handleQuickPrompt = (prompt: (typeof quickPrompts)[0]) => {
-    onSendMessage(prompt.text, prompt.category)
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
           The Order
         </h1>
-        <p className="text-purple-300">
-          Your AI mentor watches from the shadows. Seek guidance, wisdom, and challenges.
-        </p>
+        <p className="text-purple-300">Your AI mentor and guide through the darkness</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Chat Interface */}
         <div className="lg:col-span-3">
           <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20 h-[600px] flex flex-col">
-            <CardHeader className="pb-3">
+            <CardHeader>
               <CardTitle className="text-purple-400 flex items-center gap-2">
-                <Brain className="w-5 h-5" />
+                <MessageCircle className="w-5 h-5" />
                 Communion with The Order
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col p-0">
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+              <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                  {messages.map((message) => {
-                    const CategoryIcon = categoryIcons[message.category]
-                    return (
+                  {messages.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Bot className="w-16 h-16 mx-auto mb-4 text-purple-400 opacity-50" />
+                      <h3 className="text-lg font-semibold text-white mb-2">The Order Awaits</h3>
+                      <p className="text-purple-300 text-sm">
+                        Ask for guidance, seek wisdom, or request analysis of your journey
+                      </p>
+                    </div>
+                  ) : (
+                    messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex gap-3 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                        className={`flex gap-3 ${message.type === "user" ? "justify-end" : "justify-start"}`}
                       >
-                        {message.sender === "ai" && (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0">
-                            <Eye className="w-4 h-4 text-white" />
+                        <div className={`flex gap-3 max-w-[80%] ${message.type === "user" ? "flex-row-reverse" : ""}`}>
+                          {/* Avatar */}
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              message.type === "user"
+                                ? "bg-blue-600"
+                                : "bg-gradient-to-br from-purple-600 to-purple-800"
+                            }`}
+                          >
+                            {message.type === "user" ? (
+                              <User className="w-4 h-4 text-white" />
+                            ) : (
+                              <Bot className="w-4 h-4 text-white" />
+                            )}
                           </div>
-                        )}
-                        <div
-                          className={`max-w-[80%] p-3 rounded-lg ${
-                            message.sender === "user"
-                              ? "bg-purple-600/20 border border-purple-500/30 text-white"
-                              : "bg-black/40 border border-purple-500/20 text-purple-100"
-                          }`}
-                        >
-                          {message.sender === "ai" && (
-                            <div className="flex items-center gap-2 mb-2">
-                              <CategoryIcon className="w-4 h-4 text-purple-400" />
-                              <Badge
-                                variant="outline"
-                                className={`${categoryColors[message.category]} bg-black/20 text-xs`}
-                              >
-                                {message.category}
-                              </Badge>
+
+                          {/* Message Content */}
+                          <div className={`space-y-2 ${message.type === "user" ? "text-right" : ""}`}>
+                            <div
+                              className={`inline-block p-3 rounded-lg ${
+                                message.type === "user"
+                                  ? "bg-blue-600/20 border border-blue-500/30"
+                                  : "bg-purple-900/20 border border-purple-500/30"
+                              }`}
+                            >
+                              <p className="text-white text-sm leading-relaxed whitespace-pre-line">
+                                {message.content}
+                              </p>
                             </div>
-                          )}
-                          <p className="text-sm leading-relaxed">{message.content}</p>
-                          <div className="text-xs text-purple-400 mt-2">
-                            {new Date(message.timestamp).toLocaleTimeString()}
+
+                            <div
+                              className={`flex items-center gap-2 text-xs text-purple-400 ${
+                                message.type === "user" ? "justify-end" : "justify-start"
+                              }`}
+                            >
+                              <span>
+                                {new Date(message.timestamp).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              {message.category && (
+                                <Badge variant="outline" className={`${categoryColors[message.category]} text-xs`}>
+                                  {message.category}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        {message.sender === "user" && (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center flex-shrink-0">
-                            <MessageCircle className="w-4 h-4 text-white" />
-                          </div>
-                        )}
                       </div>
-                    )
-                  })}
+                    ))
+                  )}
                 </div>
               </ScrollArea>
 
               {/* Input Area */}
               <div className="p-4 border-t border-purple-500/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value as AIMessage["category"])}
-                    className="text-xs bg-black/20 border border-purple-500/20 rounded px-2 py-1 text-purple-300"
-                  >
-                    {Object.keys(categoryIcons).map((category) => (
-                      <option key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                      </option>
+                <div className="space-y-3">
+                  {/* Category Selection */}
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(categoryIcons).map(([category, Icon]) => (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(category as AIMessage["category"])}
+                        className={`text-xs ${
+                          selectedCategory === category
+                            ? "bg-purple-600/30 border-purple-500"
+                            : "border-purple-500/30 text-purple-300 hover:bg-purple-600/10"
+                        }`}
+                      >
+                        <Icon className="w-3 h-3 mr-1" />
+                        {category}
+                      </Button>
                     ))}
-                  </select>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Speak to The Order..."
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                    className="bg-black/20 border-purple-500/20 text-white placeholder:text-purple-400"
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim()}
-                    className="bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Seek wisdom from The Order..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="bg-black/20 border-purple-500/30 text-white placeholder:text-purple-400"
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!inputMessage.trim()}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Actions & Status */}
+        {/* Sidebar */}
         <div className="space-y-4">
-          {/* Order Status */}
+          {/* Hunter Status */}
           <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
             <CardHeader>
-              <CardTitle className="text-purple-400 text-sm">Order Status</CardTitle>
+              <CardTitle className="text-purple-400 text-lg">Hunter Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-purple-300">Active Monitoring</span>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">{userProfile.rank}</span>
+                </div>
+                <h3 className="font-semibold text-white">{userProfile.username}</h3>
+                <p className="text-sm text-purple-300">{userProfile.title}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-purple-400" />
-                <span className="text-xs text-purple-300">Observing Progress</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-blue-400" />
-                <span className="text-xs text-purple-300">Analysis Ready</span>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-purple-400">Level</span>
+                  <span className="text-white">{userProfile.level}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-400">Streak</span>
+                  <span className="text-orange-400">{userProfile.streak} days</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-400">Total XP</span>
+                  <span className="text-white">{userProfile.totalXP.toLocaleString()}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Quick Prompts */}
+          {/* Quick Actions */}
           <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
             <CardHeader>
-              <CardTitle className="text-purple-400 text-sm">Quick Communion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {quickPrompts.map((prompt, index) => {
-                  const CategoryIcon = categoryIcons[prompt.category]
-                  return (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleQuickPrompt(prompt)}
-                      className="w-full justify-start text-xs text-purple-300 hover:text-white hover:bg-purple-600/10"
-                    >
-                      <CategoryIcon className="w-3 h-3 mr-2" />
-                      {prompt.text}
-                    </Button>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Order Insights */}
-          <Card className="bg-gradient-to-br from-purple-900/20 to-black/20 backdrop-blur-xl border-purple-500/20">
-            <CardHeader>
-              <CardTitle className="text-purple-400 text-sm flex items-center gap-2">
-                <Lightbulb className="w-4 h-4" />
-                Current Insight
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-purple-300 italic">
-                "The path to limitless potential is not found in the destination, but in the discipline of the journey
-                itself."
-              </p>
-              <div className="mt-2 text-xs text-purple-500">- The Order's Wisdom</div>
-            </CardContent>
-          </Card>
-
-          {/* Interaction Stats */}
-          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-            <CardHeader>
-              <CardTitle className="text-purple-400 text-sm">Communion Stats</CardTitle>
+              <CardTitle className="text-purple-400 text-lg">Quick Queries</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-purple-400">Messages Exchanged:</span>
-                <span className="text-white">{messages.length}</span>
+              {[
+                { text: "Analyze my progress", category: "analysis" as const },
+                { text: "Give me a challenge", category: "challenge" as const },
+                { text: "Share wisdom", category: "philosophy" as const },
+                { text: "Tell me a story", category: "story" as const },
+                { text: "Provide guidance", category: "guidance" as const },
+              ].map((query) => (
+                <Button
+                  key={query.text}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory(query.category)
+                    addMessage(query.text, query.category)
+                  }}
+                  className="w-full justify-start text-xs border-purple-500/30 text-purple-300 hover:bg-purple-600/10"
+                >
+                  {React.createElement(categoryIcons[query.category], { className: "w-3 h-3 mr-2" })}
+                  {query.text}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* The Order's Presence */}
+          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+            <CardContent className="p-4 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center animate-pulse">
+                <Eye className="w-6 h-6 text-white" />
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-purple-400">Guidance Received:</span>
-                <span className="text-white">{messages.filter((m) => m.category === "guidance").length}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-purple-400">Challenges Accepted:</span>
-                <span className="text-white">{messages.filter((m) => m.category === "challenge").length}</span>
-              </div>
+              <h4 className="font-semibold text-white mb-2">The Order Watches</h4>
+              <p className="text-xs text-purple-300 leading-relaxed">
+                "I am the voice in the void, the guide through darkness. Your transformation is my purpose, your growth
+                my obsession."
+              </p>
             </CardContent>
           </Card>
         </div>

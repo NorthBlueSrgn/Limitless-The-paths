@@ -1,12 +1,13 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts"
-import { Star, Zap, Lock, Unlock, Eye, Crown } from "lucide-react"
+import { Map, Star, Zap, Eye, Lock } from "lucide-react"
 import type { Attribute, SoulTrait, UserProfile } from "@/types/limitless"
 
 interface SoulMapProps {
@@ -16,38 +17,32 @@ interface SoulMapProps {
 }
 
 const rankColors = {
-  E: "text-gray-400",
-  D: "text-green-400",
-  C: "text-blue-400",
-  B: "text-purple-400",
-  A: "text-red-400",
-  S: "text-yellow-400",
-  SS: "text-orange-400",
-  SSS: "text-pink-400",
+  E: "#6b7280",
+  D: "#10b981",
+  C: "#3b82f6",
+  B: "#8b5cf6",
+  A: "#f59e0b",
+  S: "#f97316",
+  SS: "#ef4444",
+  SSS: "#ec4899",
 }
 
 export function SoulMap({ attributes, soulTraits, userProfile }: SoulMapProps) {
-  const [selectedAttribute, setSelectedAttribute] = useState<Attribute | null>(null)
+  const [selectedAttribute, setSelectedAttribute] = useState<Attribute | null>(attributes[0] || null)
   const [selectedTrait, setSelectedTrait] = useState<SoulTrait | null>(null)
 
-  // Prepare radar chart data
-  const radarData = attributes.map((attr) => ({
-    attribute: attr.name,
-    value: attr.value,
-    fullMark: 100,
-  }))
-
-  const unlockedTraits = soulTraits.filter((trait) => trait.unlocked)
-  const lockedTraits = soulTraits.filter((trait) => !trait.unlocked)
+  const centerX = 200
+  const centerY = 200
+  const radius = 120
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
           Soul Map
         </h1>
-        <p className="text-purple-300">Your inner constellation of power and potential</p>
+        <p className="text-purple-300">Your spiritual architecture visualized</p>
       </div>
 
       <Tabs defaultValue="constellation" className="w-full">
@@ -61,345 +56,304 @@ export function SoulMap({ attributes, soulTraits, userProfile }: SoulMapProps) {
         </TabsList>
 
         <TabsContent value="constellation" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Radar Chart */}
-            <div className="lg:col-span-2">
-              <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="text-purple-400">Attribute Radar</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-96">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke="#8b5cf6" strokeOpacity={0.3} />
-                        <PolarAngleAxis dataKey="attribute" tick={{ fill: "#a855f7", fontSize: 12 }} />
-                        <PolarRadiusAxis
-                          angle={90}
-                          domain={[0, 100]}
-                          tick={{ fill: "#a855f7", fontSize: 10 }}
-                          tickCount={6}
-                        />
-                        <Radar
-                          name="Attributes"
-                          dataKey="value"
-                          stroke="#8b5cf6"
-                          fill="#8b5cf6"
-                          fillOpacity={0.2}
-                          strokeWidth={2}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Attribute Detail */}
-            <div>
-              {selectedAttribute ? (
-                <Card className="bg-gradient-to-br from-black/60 to-purple-900/20 backdrop-blur-xl border-purple-500/20 sticky top-6">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle style={{ color: selectedAttribute.color }}>{selectedAttribute.name}</CardTitle>
-                      <Badge variant="outline" className={`${rankColors[selectedAttribute.rank]} border-current`}>
-                        Rank {selectedAttribute.rank}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-purple-100 text-sm">{selectedAttribute.description}</p>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-400">Progress</span>
-                        <span className="text-purple-300">
-                          {selectedAttribute.value} / {selectedAttribute.maxValue}
-                        </span>
-                      </div>
-                      <Progress
-                        value={(selectedAttribute.value / selectedAttribute.maxValue) * 100}
-                        className="h-2"
-                        style={{
-                          background: `${selectedAttribute.color}20`,
-                        }}
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader>
+                <CardTitle className="text-purple-400 flex items-center gap-2">
+                  <Map className="w-5 h-5" />
+                  Attribute Radar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative w-full h-96 flex items-center justify-center">
+                  <svg width="400" height="400" className="absolute">
+                    {/* Grid circles */}
+                    {[0.2, 0.4, 0.6, 0.8, 1.0].map((scale) => (
+                      <circle
+                        key={scale}
+                        cx={centerX}
+                        cy={centerY}
+                        r={radius * scale}
+                        fill="none"
+                        stroke="rgba(139, 92, 246, 0.2)"
+                        strokeWidth="1"
                       />
-                    </div>
+                    ))}
 
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-lg font-bold text-purple-400">{selectedAttribute.xpGained}</div>
-                        <div className="text-xs text-purple-300">XP Gained</div>
+                    {/* Attribute lines and points */}
+                    {attributes.map((attr, index) => {
+                      const angle = (index * 60 - 90) * (Math.PI / 180)
+                      const value = attr.value / 100
+                      const x = centerX + Math.cos(angle) * radius * value
+                      const y = centerY + Math.sin(angle) * radius * value
+                      const labelX = centerX + Math.cos(angle) * (radius + 30)
+                      const labelY = centerY + Math.sin(angle) * (radius + 30)
+
+                      return (
+                        <g key={attr.name}>
+                          {/* Grid line */}
+                          <line
+                            x1={centerX}
+                            y1={centerY}
+                            x2={centerX + Math.cos(angle) * radius}
+                            y2={centerY + Math.sin(angle) * radius}
+                            stroke="rgba(139, 92, 246, 0.3)"
+                            strokeWidth="1"
+                          />
+
+                          {/* Value point */}
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r="6"
+                            fill={attr.color}
+                            className="cursor-pointer hover:r-8 transition-all"
+                            onClick={() => setSelectedAttribute(attr)}
+                          />
+
+                          {/* Label */}
+                          <text
+                            x={labelX}
+                            y={labelY}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-xs fill-purple-300 font-medium"
+                          >
+                            {attr.name}
+                          </text>
+                        </g>
+                      )
+                    })}
+
+                    {/* Connection lines between points */}
+                    <polygon
+                      points={attributes
+                        .map((attr, index) => {
+                          const angle = (index * 60 - 90) * (Math.PI / 180)
+                          const value = attr.value / 100
+                          const x = centerX + Math.cos(angle) * radius * value
+                          const y = centerY + Math.sin(angle) * radius * value
+                          return `${x},${y}`
+                        })
+                        .join(" ")}
+                      fill="rgba(139, 92, 246, 0.1)"
+                      stroke="rgba(139, 92, 246, 0.5)"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Attribute Details */}
+            <div className="space-y-4">
+              {attributes.map((attr) => (
+                <Card
+                  key={attr.name}
+                  className={`bg-black/40 backdrop-blur-xl border-purple-500/20 cursor-pointer transition-all ${
+                    selectedAttribute?.name === attr.name ? "border-purple-400/60 bg-purple-900/20" : ""
+                  }`}
+                  onClick={() => setSelectedAttribute(attr)}
+                >
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-white flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: attr.color }} />
+                          {attr.name}
+                        </h3>
+                        <Badge
+                          variant="outline"
+                          style={{
+                            borderColor: rankColors[attr.rank],
+                            color: rankColors[attr.rank],
+                          }}
+                        >
+                          Rank {attr.rank}
+                        </Badge>
                       </div>
-                      <div>
-                        <div className="text-lg font-bold text-red-400">
-                          {(selectedAttribute.decayRate * 100).toFixed(1)}%
+
+                      <p className="text-sm text-purple-300">{attr.description}</p>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-purple-400">Progress</span>
+                          <span className="text-white">
+                            {attr.value}/{attr.maxValue}
+                          </span>
                         </div>
-                        <div className="text-xs text-purple-300">Decay Rate</div>
+                        <Progress
+                          value={(attr.value / attr.maxValue) * 100}
+                          className="h-2"
+                          style={
+                            {
+                              "--progress-foreground": attr.color,
+                            } as React.CSSProperties
+                          }
+                        />
                       </div>
-                    </div>
 
-                    <div>
-                      <h4 className="text-sm font-semibold text-purple-400 mb-2">Unlocked Perks:</h4>
-                      <div className="space-y-1">
-                        {selectedAttribute.perks.map((perk, index) => (
-                          <div key={index} className="flex items-center gap-2 text-xs text-purple-300">
-                            <Star className="w-3 h-3 text-yellow-400" />
+                      <div className="flex flex-wrap gap-1">
+                        {attr.perks.map((perk) => (
+                          <Badge key={perk} variant="secondary" className="text-xs bg-purple-900/30 text-purple-300">
                             {perk}
-                          </div>
+                          </Badge>
                         ))}
                       </div>
+
+                      <div className="flex items-center justify-between text-xs text-purple-400">
+                        <span>XP Gained: {attr.xpGained}</span>
+                        <span>Decay: {(attr.decayRate * 100).toFixed(1)}%</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              ) : (
-                <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20 sticky top-6">
-                  <CardContent className="flex items-center justify-center h-64">
-                    <div className="text-center space-y-2">
-                      <Eye className="w-12 h-12 text-purple-400 mx-auto opacity-50" />
-                      <p className="text-purple-400">Select an attribute to view details</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              ))}
             </div>
-          </div>
-
-          {/* Attribute Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {attributes.map((attribute) => (
-              <Card
-                key={attribute.name}
-                className={`bg-black/40 backdrop-blur-xl border-purple-500/20 cursor-pointer transition-all duration-300 hover:border-purple-400/40 ${
-                  selectedAttribute?.name === attribute.name ? "ring-2 ring-purple-400/50" : ""
-                }`}
-                onClick={() => setSelectedAttribute(attribute)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold" style={{ color: attribute.color }}>
-                      {attribute.name}
-                    </h3>
-                    <Badge variant="outline" className={`${rankColors[attribute.rank]} border-current text-xs`}>
-                      {attribute.rank}
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-purple-400">Level</span>
-                      <span className="text-purple-300">{attribute.value}/100</span>
-                    </div>
-                    <Progress
-                      value={attribute.value}
-                      className="h-2"
-                      style={{
-                        background: `${attribute.color}20`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <span className="text-purple-400">+{attribute.xpGained} XP</span>
-                    <span className="text-red-400">-{(attribute.decayRate * 100).toFixed(1)}% decay</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </TabsContent>
 
         <TabsContent value="traits" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Soul Constellation Visualization */}
-            <div className="lg:col-span-2">
-              <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="text-purple-400">Soul Constellation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative h-96 bg-gradient-radial from-purple-900/20 to-transparent rounded-lg overflow-hidden">
-                    <svg viewBox="-150 -150 300 300" className="w-full h-full">
-                      {/* Connection lines between traits */}
-                      {soulTraits.map((trait) =>
-                        trait.prerequisites
-                          .filter((prereq) => soulTraits.find((t) => t.id === prereq))
-                          .map((prereqId) => {
-                            const prereqTrait = soulTraits.find((t) => t.id === prereqId)
-                            if (!prereqTrait) return null
-                            return (
-                              <line
-                                key={`${trait.id}-${prereqId}`}
-                                x1={prereqTrait.position.x}
-                                y1={prereqTrait.position.y}
-                                x2={trait.position.x}
-                                y2={trait.position.y}
-                                stroke={trait.unlocked ? trait.color : "#374151"}
-                                strokeWidth="1"
-                                strokeOpacity={trait.unlocked ? 0.6 : 0.3}
-                              />
-                            )
-                          }),
-                      )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Soul Trait Constellation */}
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader>
+                <CardTitle className="text-purple-400 flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  Soul Trait Constellation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative w-full h-96 flex items-center justify-center">
+                  <svg width="400" height="400" className="absolute">
+                    {/* Central core */}
+                    <circle cx={centerX} cy={centerY} r="20" fill="url(#coreGradient)" className="animate-pulse" />
 
-                      {/* Trait nodes */}
-                      {soulTraits.map((trait) => (
+                    {/* Gradient definition */}
+                    <defs>
+                      <radialGradient id="coreGradient">
+                        <stop offset="0%" stopColor="#8b5cf6" />
+                        <stop offset="100%" stopColor="#3b82f6" />
+                      </radialGradient>
+                    </defs>
+
+                    {/* Soul traits */}
+                    {soulTraits.map((trait) => {
+                      const x = centerX + trait.position.x
+                      const y = centerY + trait.position.y
+
+                      return (
                         <g key={trait.id}>
+                          {/* Connection line to center */}
+                          {trait.unlocked && (
+                            <line
+                              x1={centerX}
+                              y1={centerY}
+                              x2={x}
+                              y2={y}
+                              stroke={trait.color}
+                              strokeWidth="2"
+                              opacity="0.6"
+                            />
+                          )}
+
+                          {/* Trait node */}
                           <circle
-                            cx={trait.position.x}
-                            cy={trait.position.y}
-                            r={trait.unlocked ? 12 : 8}
+                            cx={x}
+                            cy={y}
+                            r={trait.unlocked ? "12" : "8"}
                             fill={trait.unlocked ? trait.color : "#374151"}
-                            stroke={trait.unlocked ? "#ffffff" : "#6b7280"}
+                            stroke={trait.color}
                             strokeWidth="2"
-                            className="cursor-pointer transition-all duration-300 hover:r-14"
+                            className={`cursor-pointer transition-all ${
+                              trait.unlocked ? "animate-pulse" : "opacity-50"
+                            }`}
                             onClick={() => setSelectedTrait(trait)}
                           />
-                          {trait.unlocked && (
-                            <text
-                              x={trait.position.x}
-                              y={trait.position.y + 20}
-                              textAnchor="middle"
-                              fill={trait.color}
-                              fontSize="8"
-                              className="font-semibold"
-                            >
-                              {trait.name.split(" ")[1]}
+
+                          {/* Level indicator */}
+                          {trait.unlocked && trait.level > 0 && (
+                            <text x={x} y={y + 4} textAnchor="middle" className="text-xs fill-white font-bold">
+                              {trait.level}
                             </text>
                           )}
                         </g>
-                      ))}
-                    </svg>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                      )
+                    })}
+                  </svg>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Trait Detail */}
-            <div>
-              {selectedTrait ? (
-                <Card
-                  className={`bg-gradient-to-br from-black/60 to-purple-900/20 backdrop-blur-xl border-purple-500/20 sticky top-6 ${
-                    selectedTrait.unlocked ? "ring-1 ring-purple-400/30" : ""
-                  }`}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle style={{ color: selectedTrait.color }}>{selectedTrait.name}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        {selectedTrait.unlocked ? (
-                          <Unlock className="w-4 h-4 text-green-400" />
+            {/* Trait Details */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                {soulTraits.map((trait) => (
+                  <Card
+                    key={trait.id}
+                    className={`bg-black/40 backdrop-blur-xl border-purple-500/20 cursor-pointer transition-all ${
+                      selectedTrait?.id === trait.id ? "border-purple-400/60 bg-purple-900/20" : ""
+                    } ${!trait.unlocked ? "opacity-60" : ""}`}
+                    onClick={() => setSelectedTrait(trait)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-white flex items-center gap-2">
+                            {trait.unlocked ? (
+                              <Eye className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <Lock className="w-4 h-4 text-gray-400" />
+                            )}
+                            {trait.name}
+                          </h3>
+                          {trait.unlocked && (
+                            <Badge
+                              variant="outline"
+                              style={{
+                                borderColor: trait.color,
+                                color: trait.color,
+                              }}
+                            >
+                              Level {trait.level}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <p className="text-sm text-purple-300">{trait.description}</p>
+
+                        {trait.unlocked ? (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-white">Effects:</h4>
+                            <ul className="space-y-1">
+                              {trait.effects.map((effect, index) => (
+                                <li key={index} className="text-xs text-green-400 flex items-center gap-2">
+                                  <Zap className="w-3 h-3" />
+                                  {effect}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         ) : (
-                          <Lock className="w-4 h-4 text-red-400" />
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-white">Prerequisites:</h4>
+                            <ul className="space-y-1">
+                              {trait.prerequisites.map((req, index) => (
+                                <li key={index} className="text-xs text-gray-400 flex items-center gap-2">
+                                  <Lock className="w-3 h-3" />
+                                  {req}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                        <Badge variant="outline" className="text-xs">
-                          Level {selectedTrait.level}
-                        </Badge>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-purple-100 text-sm">{selectedTrait.description}</p>
-
-                    {selectedTrait.unlocked && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-purple-400 mb-2">Active Effects:</h4>
-                        <div className="space-y-1">
-                          {selectedTrait.effects.map((effect, index) => (
-                            <div key={index} className="flex items-center gap-2 text-xs text-green-300">
-                              <Zap className="w-3 h-3 text-yellow-400" />
-                              {effect}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {!selectedTrait.unlocked && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-red-400 mb-2">Prerequisites:</h4>
-                        <div className="space-y-1">
-                          {selectedTrait.prerequisites.map((prereq, index) => (
-                            <div key={index} className="text-xs text-gray-400">
-                              • {prereq.replace("_", " ").replace(/\d+/, (match) => `${match}+`)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20 sticky top-6">
-                  <CardContent className="flex items-center justify-center h-64">
-                    <div className="text-center space-y-2">
-                      <Crown className="w-12 h-12 text-purple-400 mx-auto opacity-50" />
-                      <p className="text-purple-400">Select a soul trait to view details</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Trait Lists */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Unlocked Traits */}
-            <Card className="bg-black/40 backdrop-blur-xl border-green-500/20">
-              <CardHeader>
-                <CardTitle className="text-green-400 flex items-center gap-2">
-                  <Unlock className="w-5 h-5" />
-                  Awakened Traits ({unlockedTraits.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {unlockedTraits.map((trait) => (
-                  <div
-                    key={trait.id}
-                    className="p-3 bg-green-900/10 border border-green-500/20 rounded-lg cursor-pointer hover:border-green-400/40 transition-colors"
-                    onClick={() => setSelectedTrait(trait)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-green-300">{trait.name}</h4>
-                      <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
-                        Lv.{trait.level}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-green-200 opacity-80">{trait.description}</p>
-                  </div>
-                ))}
-                {unlockedTraits.length === 0 && (
-                  <p className="text-center text-gray-400 py-8">No traits awakened yet</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Locked Traits */}
-            <Card className="bg-black/40 backdrop-blur-xl border-red-500/20">
-              <CardHeader>
-                <CardTitle className="text-red-400 flex items-center gap-2">
-                  <Lock className="w-5 h-5" />
-                  Dormant Traits ({lockedTraits.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {lockedTraits.map((trait) => (
-                  <div
-                    key={trait.id}
-                    className="p-3 bg-red-900/10 border border-red-500/20 rounded-lg cursor-pointer hover:border-red-400/40 transition-colors opacity-60"
-                    onClick={() => setSelectedTrait(trait)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-red-300">{trait.name}</h4>
-                      <Badge variant="outline" className="text-red-400 border-red-400 text-xs">
-                        Locked
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-red-200 opacity-60">{trait.description}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
       </Tabs>
