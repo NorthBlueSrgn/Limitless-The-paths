@@ -18,7 +18,6 @@ export default function LimitlessApp() {
     attributes,
     soulTraits,
     paths,
-    activePaths,
     dailyTasks,
     storyChapters,
     journalEntries,
@@ -26,42 +25,44 @@ export default function LimitlessApp() {
     chronicles,
     codexEntries,
     aiMessages,
-    decayMetrics,
     completeTask,
     addJournalEntry,
     addChronicle,
     addAIMessage,
+    activePaths,
+    decayMetrics,
   } = useLimitlessData()
 
-  const renderContent = () => {
+  const renderActiveTab = () => {
     switch (activeTab) {
       case "soul-map":
         return <SoulMap attributes={attributes} soulTraits={soulTraits} userProfile={userProfile} />
       case "paths":
-        return <Paths paths={paths} activePaths={activePaths} dailyTasks={dailyTasks} onCompleteTask={completeTask} />
+        return <Paths paths={paths} dailyTasks={dailyTasks} completeTask={completeTask} />
       case "chapter-black":
-        return <ChapterBlack chapters={storyChapters} userProfile={userProfile} />
+        return <ChapterBlack storyChapters={storyChapters} userProfile={userProfile} />
       case "archives":
         return (
           <Archives
             journalEntries={journalEntries}
             chronicles={chronicles}
-            onAddJournalEntry={addJournalEntry}
-            onAddChronicle={addChronicle}
+            addJournalEntry={addJournalEntry}
+            addChronicle={addChronicle}
           />
         )
       case "the-order":
-        return <TheOrder messages={aiMessages} onSendMessage={addAIMessage} />
+        return <TheOrder messages={aiMessages} addMessage={addAIMessage} userProfile={userProfile} />
       case "labyrinth":
-        return <Labyrinth codexEntries={codexEntries} userProfile={userProfile} />
+        return <Labyrinth codexEntries={codexEntries} />
       case "advanced-stats":
         return (
           <AdvancedStats
             userProfile={userProfile}
             attributes={attributes}
             paths={paths}
-            decayMetrics={decayMetrics}
+            dailyTasks={dailyTasks}
             hunterExams={hunterExams}
+            decayMetrics={decayMetrics}
           />
         )
       default:
@@ -71,21 +72,23 @@ export default function LimitlessApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-purple-950/20 to-black">
-      {/* Animated Background */}
+      {/* Animated background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-purple-600/3 to-transparent rounded-full animate-spin-slow"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-purple-500/3 to-transparent rounded-full animate-spin-slow" />
       </div>
 
-      <div className="relative z-10 flex">
+      <div className="relative z-10 flex h-screen">
         <Navigation
           activeTab={activeTab}
           onTabChange={setActiveTab}
           userProfile={userProfile}
           activePaths={activePaths}
         />
-        <main className="flex-1 p-6 overflow-y-auto max-h-screen">{renderContent()}</main>
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">{renderActiveTab()}</div>
+        </main>
       </div>
     </div>
   )

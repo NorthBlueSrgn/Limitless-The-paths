@@ -401,4 +401,8 @@ export function SoulMap({ attributes, soulTraits, userProfile }: SoulMapProps) {
               </CardContent>
             </Card>
           </div>
-        </Tabs\
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

@@ -1,264 +1,273 @@
 "use client"
 
-import React from "react"
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Lock, Eye, Star, BookOpen, Lightbulb, Crown, Zap, Scroll, Brain, Target, Flame } from "lucide-react"
-import type { CodexEntry, UserProfile } from "@/types/limitless"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Search, Book, Sword, RatioIcon as Ritual, Crown, Eye, Brain, Lock, Star, Zap } from "lucide-react"
+import type { CodexEntry } from "@/types/limitless"
 
 interface LabyrinthProps {
   codexEntries: CodexEntry[]
-  userProfile: UserProfile
 }
 
 const categoryIcons = {
-  Philosophy: Brain,
+  Philosophy: Book,
+  Tactic: Sword,
+  Ritual: Ritual,
+  Legend: Crown,
   Secret: Eye,
-  Quote: Scroll,
-  Tactic: Target,
-  Ritual: Flame,
-  "Mental Model": Lightbulb,
-  "Legendary Figure": Crown,
-}
-
-const categoryColors = {
-  Philosophy: "from-purple-400 to-blue-400",
-  Secret: "from-red-400 to-orange-400",
-  Quote: "from-green-400 to-blue-400",
-  Tactic: "from-yellow-400 to-orange-400",
-  Ritual: "from-red-400 to-purple-400",
-  "Mental Model": "from-blue-400 to-cyan-400",
-  "Legendary Figure": "from-yellow-400 to-red-400",
+  "Mental Model": Brain,
 }
 
 const rarityColors = {
-  Common: "text-gray-400 border-gray-400",
-  Rare: "text-blue-400 border-blue-400",
-  Epic: "text-purple-400 border-purple-400",
-  Legendary: "text-yellow-400 border-yellow-400",
-  Mythic: "text-red-400 border-red-400",
+  Common: "from-gray-400 to-gray-600",
+  Rare: "from-blue-400 to-blue-600",
+  Epic: "from-purple-400 to-purple-600",
+  Legendary: "from-orange-400 to-red-500",
+  Mythic: "from-red-400 to-pink-500",
 }
 
-const rarityGlow = {
-  Common: "shadow-gray-400/20",
-  Rare: "shadow-blue-400/20",
-  Epic: "shadow-purple-400/20",
-  Legendary: "shadow-yellow-400/20",
-  Mythic: "shadow-red-400/20",
+const rarityBorders = {
+  Common: "border-gray-500/50",
+  Rare: "border-blue-500/50",
+  Epic: "border-purple-500/50",
+  Legendary: "border-orange-500/50",
+  Mythic: "border-pink-500/50",
 }
 
-export function Labyrinth({ codexEntries, userProfile }: LabyrinthProps) {
-  const [selectedEntry, setSelectedEntry] = useState<CodexEntry | null>(null)
+export function Labyrinth({ codexEntries }: LabyrinthProps) {
+  const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedEntry, setSelectedEntry] = useState<CodexEntry | null>(null)
 
-  const unlockedEntries = codexEntries.filter((entry) => entry.unlocked)
-  const lockedEntries = codexEntries.filter((entry) => !entry.unlocked)
+  // Filter entries
+  const filteredEntries = codexEntries.filter((entry) => {
+    const matchesSearch =
+      entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.content.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "all" || entry.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
 
-  const filteredEntries =
-    selectedCategory === "all"
-      ? unlockedEntries
-      : unlockedEntries.filter((entry) => entry.category === selectedCategory)
+  const unlockedEntries = filteredEntries.filter((entry) => entry.unlocked)
+  const lockedEntries = filteredEntries.filter((entry) => !entry.unlocked)
 
-  const categories = Array.from(new Set(codexEntries.map((entry) => entry.category)))
+  const categories = ["all", ...Array.from(new Set(codexEntries.map((entry) => entry.category)))]
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
           The Labyrinth
         </h1>
-        <p className="text-purple-300">
-          Ancient knowledge awaits. Unlock the secrets of transformation through your journey.
-        </p>
+        <p className="text-purple-300">Repository of forbidden knowledge and ancient wisdom</p>
       </div>
 
-      <Tabs defaultValue="codex" className="w-full">
+      {/* Search and Filters */}
+      <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
+              <Input
+                placeholder="Search the depths of knowledge..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-black/20 border-purple-500/30 text-purple-100 placeholder-purple-400"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`${
+                    selectedCategory === category
+                      ? "bg-purple-600 text-white"
+                      : "border-purple-500/30 text-purple-400 hover:bg-purple-900/20"
+                  }`}
+                >
+                  {category === "all" ? "All" : category}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="unlocked" className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-black/40 border border-purple-500/20">
-          <TabsTrigger value="codex" className="data-[state=active]:bg-purple-600/30">
-            Codex Entries
+          <TabsTrigger value="unlocked" className="data-[state=active]:bg-purple-600/30">
+            Unlocked Knowledge ({unlockedEntries.length})
           </TabsTrigger>
           <TabsTrigger value="locked" className="data-[state=active]:bg-purple-600/30">
-            Sealed Knowledge
+            Sealed Secrets ({lockedEntries.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="codex" className="space-y-4">
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedCategory === "all" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSelectedCategory("all")}
-              className="text-xs"
-            >
-              All Categories
-            </Button>
-            {categories.map((category) => {
-              const CategoryIcon = categoryIcons[category as keyof typeof categoryIcons]
+        <TabsContent value="unlocked" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {unlockedEntries.map((entry) => {
+              const Icon = categoryIcons[entry.category as keyof typeof categoryIcons]
               return (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(category)}
-                  className="text-xs"
-                >
-                  <CategoryIcon className="w-3 h-3 mr-1" />
-                  {category}
-                </Button>
-              )
-            })}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Entry Grid */}
-            <div className="lg:col-span-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredEntries.map((entry) => {
-                  const CategoryIcon = categoryIcons[entry.category as keyof typeof categoryIcons]
-                  return (
+                <Dialog key={entry.id}>
+                  <DialogTrigger asChild>
                     <Card
-                      key={entry.id}
-                      className={`bg-black/40 backdrop-blur-xl border-purple-500/20 cursor-pointer transition-all duration-300 hover:border-purple-400/40 ${
-                        selectedEntry?.id === entry.id ? "ring-2 ring-purple-400/50" : ""
-                      } ${rarityGlow[entry.rarity]} hover:shadow-lg`}
-                      onClick={() => setSelectedEntry(entry)}
+                      className={`bg-gradient-to-br from-black/60 to-purple-900/20 backdrop-blur-xl ${rarityBorders[entry.rarity]} cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20`}
                     >
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
-                            <CategoryIcon className="w-4 h-4 text-purple-400" />
-                            <Badge variant="outline" className={`${rarityColors[entry.rarity]} bg-black/20 text-xs`}>
+                            <Icon className="w-5 h-5 text-purple-400" />
+                            <Badge
+                              variant="outline"
+                              className={`bg-gradient-to-r ${rarityColors[entry.rarity]} text-black font-bold text-xs`}
+                            >
                               {entry.rarity}
                             </Badge>
                           </div>
-                          <Badge variant="secondary" className="text-xs bg-purple-900/30 text-purple-300">
-                            {entry.category}
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(5, Math.ceil(entry.powerLevel / 3)) }).map((_, i) => (
+                              <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                            ))}
+                          </div>
                         </div>
-                        <CardTitle
-                          className={`text-sm bg-gradient-to-r ${categoryColors[entry.category as keyof typeof categoryColors]} bg-clip-text text-transparent`}
-                        >
-                          {entry.title}
-                        </CardTitle>
+                        <CardTitle className="text-purple-100 text-lg leading-tight">{entry.title}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-xs text-purple-300 line-clamp-3">{entry.content.substring(0, 120)}...</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center gap-1 text-xs text-purple-400">
-                            <Star className="w-3 h-3" />
-                            {entry.powerLevel}
+                        <p className="text-purple-300 text-sm line-clamp-3 mb-3">{entry.content.split("\n")[0]}</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-purple-400">{entry.category}</span>
+                          <div className="flex items-center gap-1 text-yellow-400">
+                            <Zap className="w-3 h-3" />
+                            <span>{entry.powerLevel}</span>
                           </div>
-                          {entry.source && <div className="text-xs text-purple-500">- {entry.source}</div>}
                         </div>
                       </CardContent>
                     </Card>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Entry Detail */}
-            <div>
-              {selectedEntry ? (
-                <Card
-                  className={`bg-gradient-to-br from-black/60 to-purple-900/20 backdrop-blur-xl border-purple-500/20 ${rarityGlow[selectedEntry.rarity]} shadow-lg sticky top-6`}
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-2 mb-2">
-                      {React.createElement(categoryIcons[selectedEntry.category as keyof typeof categoryIcons], {
-                        className: "w-5 h-5 text-purple-400",
-                      })}
-                      <Badge variant="outline" className={`${rarityColors[selectedEntry.rarity]} bg-black/20`}>
-                        {selectedEntry.rarity}
-                      </Badge>
-                    </div>
-                    <CardTitle
-                      className={`bg-gradient-to-r ${categoryColors[selectedEntry.category as keyof typeof categoryColors]} bg-clip-text text-transparent`}
-                    >
-                      {selectedEntry.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <ScrollArea className="h-64">
-                      <div className="prose prose-invert max-w-none">
-                        <p className="text-purple-100 leading-relaxed text-sm whitespace-pre-line">
-                          {selectedEntry.content}
-                        </p>
-                      </div>
-                    </ScrollArea>
-
-                    {selectedEntry.applications.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-purple-400 mb-2">Applications:</h4>
-                        <div className="space-y-1">
-                          {selectedEntry.applications.map((app, index) => (
-                            <div key={index} className="flex items-center gap-2 text-xs text-purple-300">
-                              <Zap className="w-3 h-3 text-yellow-400" />
-                              {app}
-                            </div>
-                          ))}
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] bg-black/90 backdrop-blur-xl border-purple-500/20">
+                    <DialogHeader>
+                      <div className="flex items-center justify-between">
+                        <DialogTitle className="text-2xl text-purple-100 flex items-center gap-3">
+                          <Icon className="w-6 h-6 text-purple-400" />
+                          {entry.title}
+                        </DialogTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`bg-gradient-to-r ${rarityColors[entry.rarity]} text-black font-bold`}
+                          >
+                            {entry.rarity}
+                          </Badge>
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(5, Math.ceil(entry.powerLevel / 3)) }).map((_, i) => (
+                              <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <div className="text-lg font-bold text-purple-400">{entry.powerLevel}</div>
+                            <div className="text-xs text-purple-300">Power Level</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-blue-400">{entry.category}</div>
+                            <div className="text-xs text-purple-300">Category</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-green-400">{entry.applications.length}</div>
+                            <div className="text-xs text-purple-300">Applications</div>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-purple-500/20">
-                      <div className="flex items-center gap-1 text-xs text-purple-400">
-                        <Star className="w-3 h-3" />
-                        Power Level: {selectedEntry.powerLevel}
+                        <div>
+                          <h3 className="text-lg font-semibold text-purple-400 mb-3">Knowledge</h3>
+                          <div className="prose prose-invert max-w-none">
+                            {entry.content.split("\n").map((paragraph, index) => (
+                              <p key={index} className="text-purple-100 mb-3">
+                                {paragraph}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+
+                        {entry.applications.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold text-purple-400 mb-3">Applications</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {entry.applications.map((application, index) => (
+                                <div key={index} className="flex items-center gap-2 text-sm text-purple-300">
+                                  <Zap className="w-3 h-3 text-yellow-400" />
+                                  {application}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {entry.source && (
+                          <div className="text-center pt-4 border-t border-purple-500/20">
+                            <p className="text-sm text-purple-400">Source: {entry.source}</p>
+                          </div>
+                        )}
                       </div>
-                      {selectedEntry.source && (
-                        <div className="text-xs text-purple-500">Source: {selectedEntry.source}</div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20 sticky top-6">
-                  <CardContent className="flex items-center justify-center h-64">
-                    <div className="text-center space-y-2">
-                      <BookOpen className="w-12 h-12 text-purple-400 mx-auto opacity-50" />
-                      <p className="text-purple-400">Select an entry to view details</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+              )
+            })}
           </div>
+          {unlockedEntries.length === 0 && (
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardContent className="flex items-center justify-center h-32">
+                <p className="text-purple-400">No unlocked knowledge found</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="locked" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lockedEntries.map((entry) => {
-              const CategoryIcon = categoryIcons[entry.category as keyof typeof categoryIcons]
+              const Icon = categoryIcons[entry.category as keyof typeof categoryIcons]
               return (
-                <Card key={entry.id} className="bg-black/20 backdrop-blur-xl border-gray-700/20 opacity-60">
+                <Card
+                  key={entry.id}
+                  className="bg-gradient-to-br from-black/60 to-red-900/20 backdrop-blur-xl border-red-500/20 opacity-60"
+                >
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-gray-500" />
-                        <Badge variant="outline" className="text-gray-500 border-gray-500 bg-black/20 text-xs">
+                        <Icon className="w-5 h-5 text-red-400" />
+                        <Badge variant="outline" className="text-red-400 border-red-400 text-xs">
                           Sealed
                         </Badge>
                       </div>
-                      <Badge variant="secondary" className="text-xs bg-gray-800/30 text-gray-400">
-                        {entry.category}
-                      </Badge>
+                      <Lock className="w-4 h-4 text-red-400" />
                     </div>
-                    <CardTitle className="text-sm text-gray-400">{entry.title}</CardTitle>
+                    <CardTitle className="text-red-300 text-lg leading-tight">{entry.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xs text-gray-500 mb-3">This knowledge remains sealed...</p>
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-600 mb-1">Unlock Requirements:</p>
+                    <p className="text-red-200 text-sm mb-3">
+                      This knowledge remains sealed. Fulfill the requirements to unlock its secrets.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="text-xs text-red-400 font-semibold">Requirements:</div>
                       {entry.unlockRequirements.map((req, index) => (
-                        <div key={index} className="text-xs text-gray-600">
+                        <div key={index} className="text-xs text-red-300">
                           • {req.replace("_", " ").replace(/\d+/, (match) => `${match}+`)}
                         </div>
                       ))}
@@ -268,39 +277,15 @@ export function Labyrinth({ codexEntries, userProfile }: LabyrinthProps) {
               )
             })}
           </div>
+          {lockedEntries.length === 0 && (
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardContent className="flex items-center justify-center h-32">
+                <p className="text-purple-400">No sealed knowledge found</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
-
-      {/* Collection Stats */}
-      <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-        <CardHeader>
-          <CardTitle className="text-purple-400">Collection Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-purple-400">{unlockedEntries.length}</div>
-              <div className="text-sm text-purple-300">Unlocked</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-400">{lockedEntries.length}</div>
-              <div className="text-sm text-purple-300">Sealed</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-yellow-400">
-                {unlockedEntries.filter((e) => e.rarity === "Legendary" || e.rarity === "Mythic").length}
-              </div>
-              <div className="text-sm text-purple-300">Rare Finds</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-400">
-                {Math.round((unlockedEntries.length / codexEntries.length) * 100)}%
-              </div>
-              <div className="text-sm text-purple-300">Complete</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
