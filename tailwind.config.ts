@@ -7,7 +7,6 @@ const config: Config = {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
-    "./*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
   ],
   prefix: "",
@@ -20,10 +19,6 @@ const config: Config = {
       },
     },
     extend: {
-      fontFamily: {
-        orbitron: ["var(--font-orbitron)"],
-        inter: ["var(--font-inter)"],
-      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -77,6 +72,10 @@ const config: Config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      fontFamily: {
+        orbitron: ["var(--font-orbitron)", "monospace"],
+        inter: ["var(--font-inter)", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
