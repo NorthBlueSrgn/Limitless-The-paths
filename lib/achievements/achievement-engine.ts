@@ -1,408 +1,310 @@
-// Achievement System with Ceremonial Unlocks
-import type { UserProfile, Task, SystemEvent } from "@/lib/database/schema"
-import { IMMUTABLE_LAWS } from "@/lib/core/immutable-laws"
+import type { UserProfile } from "@/types/limitless"
 
 export interface Achievement {
   id: string
   title: string
   description: string
-  category: "progression" | "mastery" | "consistency" | "discovery" | "transcendence"
-  rarity: "common" | "rare" | "epic" | "legendary" | "mythic"
-
-  // Unlock conditions
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic"
+  category: "progress" | "consistency" | "mastery" | "discovery" | "social" | "transcendence"
   requirements: AchievementRequirement[]
-
-  // Rewards
-  xpReward: number
-  statRewards: Record<string, number>
-  titleUnlocked?: string
-  pathUnlocked?: string
-
-  // Ceremony data
-  ceremonyType: "simple" | "elaborate" | "transcendent"
-  ceremonyContent: CeremonyContent
-
-  // Metadata
-  iconUrl?: string
-  unlockedBy?: string[]
-  secretAchievement: boolean
+  rewards: {
+    xp: number
+    title?: string
+    badge?: string
+    unlocks?: string[]
+  }
+  hidden: boolean
+  icon: string
 }
 
 export interface AchievementRequirement {
-  type: "stat" | "rank" | "streak" | "task_count" | "xp_total" | "time_played" | "custom"
-  target: string
-  value: number | string
-  operator: "gte" | "lte" | "eq" | "contains"
-}
-
-export interface CeremonyContent {
-  title: string
+  type: "level" | "stat" | "streak" | "tasks" | "time" | "pattern"
+  condition: any
   description: string
-  visualEffects: string[]
-  soundEffect?: string
-  duration: number // seconds
-  interactiveElements?: CeremonyInteraction[]
-}
-
-export interface CeremonyInteraction {
-  type: "click" | "hover" | "scroll"
-  trigger: string
-  effect: string
 }
 
 export class AchievementEngine {
   private achievements: Achievement[] = [
-    // Progression Achievements
+    // Common Achievements
     {
       id: "first_steps",
-      title: "First Steps into Shadow",
-      description: "Complete your first task and begin your journey with The Order",
-      category: "progression",
+      title: "First Steps",
+      description: "Complete your first task in the system",
       rarity: "common",
-      requirements: [{ type: "task_count", target: "completed", value: 1, operator: "gte" }],
-      xpReward: 100,
-      statRewards: { spiritual: 2, resilience: 1 },
-      ceremonyType: "simple",
-      ceremonyContent: {
-        title: "The Journey Begins",
-        description: "You have taken your first step into a larger world. The Order acknowledges your commitment.",
-        visualEffects: ["fade_in", "glow_purple", "particle_burst"],
-        duration: 3,
-      },
-      secretAchievement: false,
+      category: "progress",
+      requirements: [{ type: "tasks", condition: 1, description: "Complete 1 task" }],
+      rewards: { xp: 50, title: "Initiate" },
+      hidden: false,
+      icon: "👣",
     },
-
-    {
-      id: "seeker_ascension",
-      title: "Ascension to Seeker",
-      description: "Achieve the rank of Seeker through dedicated growth",
-      category: "progression",
-      rarity: "rare",
-      requirements: [{ type: "rank", target: "current", value: "Seeker", operator: "eq" }],
-      xpReward: 500,
-      statRewards: { spiritual: 5, intelligence: 3, resilience: 2 },
-      titleUnlocked: "Seeker of Truth",
-      ceremonyType: "elaborate",
-      ceremonyContent: {
-        title: "The Seeker Awakens",
-        description:
-          "Your dedication has been recognized. You are no longer merely an Initiate - you seek deeper truths.",
-        visualEffects: ["rank_up_animation", "golden_light", "stat_visualization", "title_reveal"],
-        duration: 8,
-        interactiveElements: [{ type: "click", trigger: "continue_button", effect: "reveal_next_goals" }],
-      },
-      secretAchievement: false,
-    },
-
-    // Mastery Achievements
-    {
-      id: "spiritual_master",
-      title: "Master of the Inner Realm",
-      description: "Achieve mastery in the spiritual domain (80+ points)",
-      category: "mastery",
-      rarity: "epic",
-      requirements: [{ type: "stat", target: "spiritual", value: 80, operator: "gte" }],
-      xpReward: 1000,
-      statRewards: { spiritual: 10, resilience: 5 },
-      titleUnlocked: "Spiritual Master",
-      pathUnlocked: "transcendent_meditation",
-      ceremonyType: "elaborate",
-      ceremonyContent: {
-        title: "Spiritual Mastery Achieved",
-        description:
-          "You have transcended the material realm and achieved mastery over the spiritual domain. The Order bows in recognition.",
-        visualEffects: ["spiritual_aura", "chakra_activation", "enlightenment_burst", "stat_mastery_glow"],
-        duration: 12,
-        interactiveElements: [{ type: "hover", trigger: "aura_element", effect: "expand_spiritual_energy" }],
-      },
-      secretAchievement: false,
-    },
-
-    // Consistency Achievements
     {
       id: "week_warrior",
       title: "Week Warrior",
-      description: "Maintain a 7-day streak of consistent progress",
+      description: "Maintain a 7-day streak",
+      rarity: "common",
       category: "consistency",
-      rarity: "rare",
-      requirements: [{ type: "streak", target: "current", value: 7, operator: "gte" }],
-      xpReward: 300,
-      statRewards: { resilience: 5, health: 2 },
-      ceremonyType: "simple",
-      ceremonyContent: {
-        title: "The Flame Burns Steady",
-        description: "Seven days of unwavering commitment. Your dedication fuels the flame of transformation.",
-        visualEffects: ["flame_animation", "streak_counter", "consistency_badge"],
-        duration: 5,
-      },
-      secretAchievement: false,
+      requirements: [{ type: "streak", condition: 7, description: "Maintain 7-day streak" }],
+      rewards: { xp: 100, badge: "streak_7" },
+      hidden: false,
+      icon: "🔥",
     },
 
+    // Uncommon Achievements
     {
-      id: "century_guardian",
-      title: "Guardian of the Century",
-      description: "Achieve the legendary 100-day streak",
+      id: "balanced_growth",
+      title: "Balanced Growth",
+      description: "Reach level 10 in all core stats",
+      rarity: "uncommon",
+      category: "mastery",
+      requirements: [{ type: "stat", condition: { all: 10 }, description: "All stats at level 10+" }],
+      rewards: { xp: 250, title: "Balanced One", unlocks: ["harmony_path"] },
+      hidden: false,
+      icon: "⚖️",
+    },
+    {
+      id: "month_master",
+      title: "Month Master",
+      description: "Maintain a 30-day streak",
+      rarity: "uncommon",
       category: "consistency",
-      rarity: "legendary",
-      requirements: [{ type: "streak", target: "current", value: 100, operator: "gte" }],
-      xpReward: 5000,
-      statRewards: { resilience: 20, spiritual: 15, health: 10 },
-      titleUnlocked: "Century Guardian",
-      ceremonyType: "transcendent",
-      ceremonyContent: {
-        title: "The Century Guardian Rises",
-        description:
-          "One hundred days of unbroken dedication. You have achieved what few dare attempt. The Order grants you the title of Century Guardian.",
-        visualEffects: [
-          "legendary_entrance",
-          "century_counter_animation",
-          "guardian_transformation",
-          "stat_explosion",
-          "title_inscription",
-          "legendary_aura",
-        ],
-        duration: 20,
-        interactiveElements: [
-          { type: "click", trigger: "guardian_seal", effect: "activate_guardian_powers" },
-          { type: "scroll", trigger: "achievement_scroll", effect: "reveal_guardian_lore" },
-        ],
-      },
-      secretAchievement: false,
+      requirements: [{ type: "streak", condition: 30, description: "Maintain 30-day streak" }],
+      rewards: { xp: 500, title: "Dedicated", badge: "streak_30" },
+      hidden: false,
+      icon: "📅",
     },
 
-    // Discovery Achievements
+    // Rare Achievements
+    {
+      id: "specialist",
+      title: "Specialist",
+      description: "Reach level 25 in any single stat",
+      rarity: "rare",
+      category: "mastery",
+      requirements: [{ type: "stat", condition: { any: 25 }, description: "Any stat at level 25+" }],
+      rewards: { xp: 750, title: "Specialist", unlocks: ["mastery_paths"] },
+      hidden: false,
+      icon: "🎯",
+    },
+    {
+      id: "century_streak",
+      title: "Century Streak",
+      description: "Maintain a 100-day streak",
+      rarity: "rare",
+      category: "consistency",
+      requirements: [{ type: "streak", condition: 100, description: "Maintain 100-day streak" }],
+      rewards: { xp: 1000, title: "Unstoppable", badge: "streak_100" },
+      hidden: false,
+      icon: "💯",
+    },
+
+    // Epic Achievements
+    {
+      id: "polymath",
+      title: "Polymath",
+      description: "Reach level 20 in all core stats",
+      rarity: "epic",
+      category: "mastery",
+      requirements: [{ type: "stat", condition: { all: 20 }, description: "All stats at level 20+" }],
+      rewards: { xp: 1500, title: "Polymath", unlocks: ["transcendence_path"] },
+      hidden: false,
+      icon: "🧠",
+    },
     {
       id: "pattern_seeker",
-      title: "Seeker of Hidden Patterns",
-      description: "Discover the interconnected nature of all growth paths",
-      category: "discovery",
+      title: "Pattern Seeker",
+      description: "Discover 5 hidden synergies between different paths",
       rarity: "epic",
-      requirements: [{ type: "custom", target: "synergy_activations", value: 10, operator: "gte" }],
-      xpReward: 800,
-      statRewards: { intelligence: 8, spiritual: 5, creativity: 3 },
-      titleUnlocked: "Pattern Seeker",
-      ceremonyType: "elaborate",
-      ceremonyContent: {
-        title: "The Patterns Reveal Themselves",
-        description:
-          "You have seen beyond the surface, recognizing the hidden connections that bind all things. The Order shares its deeper mysteries.",
-        visualEffects: ["pattern_revelation", "connection_lines", "synergy_visualization", "mystery_unlock"],
-        duration: 10,
-        interactiveElements: [{ type: "hover", trigger: "pattern_nodes", effect: "highlight_connections" }],
-      },
-      secretAchievement: true,
+      category: "discovery",
+      requirements: [{ type: "pattern", condition: { synergies: 5 }, description: "Discover 5 synergies" }],
+      rewards: { xp: 1200, title: "Pattern Seeker", unlocks: ["synergy_system"] },
+      hidden: true,
+      icon: "🔍",
     },
 
-    // Transcendence Achievements
+    // Legendary Achievements
     {
-      id: "the_transcendent",
-      title: "The Transcendent",
-      description: "Achieve perfect balance across all domains and transcend mortal limitations",
-      category: "transcendence",
+      id: "master_of_all",
+      title: "Master of All",
+      description: "Reach level 50 in all core stats",
+      rarity: "legendary",
+      category: "mastery",
+      requirements: [{ type: "stat", condition: { all: 50 }, description: "All stats at level 50+" }],
+      rewards: { xp: 5000, title: "Grandmaster", unlocks: ["mentor_mode"] },
+      hidden: false,
+      icon: "👑",
+    },
+    {
+      id: "year_legend",
+      title: "Year Legend",
+      description: "Maintain a 365-day streak",
+      rarity: "legendary",
+      category: "consistency",
+      requirements: [{ type: "streak", condition: 365, description: "Maintain 365-day streak" }],
+      rewards: { xp: 3650, title: "Legendary", badge: "streak_365" },
+      hidden: false,
+      icon: "🌟",
+    },
+
+    // Mythic Achievements
+    {
+      id: "transcendent",
+      title: "Transcendent",
+      description: "Reach the highest level of mastery and understanding",
       rarity: "mythic",
+      category: "transcendence",
       requirements: [
-        { type: "stat", target: "spiritual", value: 95, operator: "gte" },
-        { type: "stat", target: "health", value: 95, operator: "gte" },
-        { type: "stat", target: "intelligence", value: 95, operator: "gte" },
-        { type: "stat", target: "physical", value: 95, operator: "gte" },
-        { type: "stat", target: "creativity", value: 95, operator: "gte" },
-        { type: "stat", target: "resilience", value: 95, operator: "gte" },
-        { type: "rank", target: "current", value: "Transcendent", operator: "eq" },
+        { type: "level", condition: 100, description: "Reach level 100" },
+        { type: "stat", condition: { all: 75 }, description: "All stats at level 75+" },
+        { type: "tasks", condition: 1000, description: "Complete 1000 tasks" },
       ],
-      xpReward: 10000,
-      statRewards: {}, // No stat rewards - they've transcended the need
-      titleUnlocked: "The Transcendent One",
-      ceremonyType: "transcendent",
-      ceremonyContent: {
-        title: "Transcendence Achieved",
-        description:
-          "You have transcended the limitations of mortal existence. You are no longer bound by the constraints that limit others. The Order recognizes you as one of the Transcendent.",
-        visualEffects: [
-          "transcendence_transformation",
-          "reality_distortion",
-          "perfect_balance_visualization",
-          "mythic_aura",
-          "dimensional_shift",
-          "transcendent_title_manifestation",
-        ],
-        duration: 30,
-        interactiveElements: [
-          { type: "click", trigger: "transcendence_seal", effect: "activate_transcendent_mode" },
-          { type: "hover", trigger: "reality_fragments", effect: "show_transcendent_abilities" },
-          { type: "scroll", trigger: "transcendence_codex", effect: "reveal_transcendent_lore" },
-        ],
-      },
-      secretAchievement: false,
+      rewards: { xp: 10000, title: "Transcendent", unlocks: ["order_access"] },
+      hidden: true,
+      icon: "✨",
+    },
+    {
+      id: "the_order",
+      title: "The Order",
+      description: "Become one with The Order itself",
+      rarity: "mythic",
+      category: "transcendence",
+      requirements: [
+        { type: "level", condition: 150, description: "Reach level 150" },
+        { type: "pattern", condition: { mentored: 100 }, description: "Guide 100 other users" },
+      ],
+      rewards: { xp: 25000, title: "The Order", unlocks: ["system_admin"] },
+      hidden: true,
+      icon: "🌌",
     },
   ]
 
-  async checkForNewAchievements(
-    userId: string,
-    userProfile: UserProfile,
-    recentTasks: Task[],
-    systemEvents: SystemEvent[],
-  ): Promise<Achievement[]> {
-    const newAchievements: Achievement[] = []
-
-    // Get user's current achievements to avoid duplicates
-    const currentAchievements = await this.getUserAchievements(userId)
-    const currentAchievementIds = currentAchievements.map((a) => a.id)
+  checkAchievements(userProfile: UserProfile, recentActivity?: any): Achievement[] {
+    const unlockedAchievements: Achievement[] = []
+    const currentAchievements = userProfile.achievements || []
 
     for (const achievement of this.achievements) {
-      if (currentAchievementIds.includes(achievement.id)) continue
+      // Skip if already unlocked
+      if (currentAchievements.includes(achievement.id)) continue
 
-      if (await this.checkAchievementRequirements(achievement, userProfile, recentTasks, systemEvents)) {
-        newAchievements.push(achievement)
-        await this.awardAchievement(userId, achievement)
+      // Check if all requirements are met
+      const requirementsMet = achievement.requirements.every((req) =>
+        this.evaluateRequirement(req, userProfile, recentActivity),
+      )
+
+      if (requirementsMet) {
+        unlockedAchievements.push(achievement)
       }
     }
 
-    return newAchievements
+    return unlockedAchievements
   }
 
-  private async checkAchievementRequirements(
-    achievement: Achievement,
-    userProfile: UserProfile,
-    recentTasks: Task[],
-    systemEvents: SystemEvent[],
-  ): Promise<boolean> {
-    for (const requirement of achievement.requirements) {
-      if (!(await this.checkSingleRequirement(requirement, userProfile, recentTasks, systemEvents))) {
-        return false
-      }
-    }
-    return true
-  }
-
-  private async checkSingleRequirement(
+  private evaluateRequirement(
     requirement: AchievementRequirement,
     userProfile: UserProfile,
-    recentTasks: Task[],
-    systemEvents: SystemEvent[],
-  ): Promise<boolean> {
-    const { type, target, value, operator } = requirement
+    recentActivity?: any,
+  ): boolean {
+    switch (requirement.type) {
+      case "level":
+        return userProfile.level >= requirement.condition
 
-    let actualValue: any
-
-    switch (type) {
       case "stat":
-        actualValue = userProfile.stats[target as keyof typeof userProfile.stats]
-        break
-      case "rank":
-        actualValue = userProfile.currentRank
-        break
+        if (requirement.condition.all) {
+          return Object.values(userProfile.stats || {}).every((value) => value >= requirement.condition.all)
+        }
+        if (requirement.condition.any) {
+          return Object.values(userProfile.stats || {}).some((value) => value >= requirement.condition.any)
+        }
+        return Object.entries(requirement.condition).every(([stat, value]) => (userProfile.stats?.[stat] || 0) >= value)
+
       case "streak":
-        actualValue = userProfile.currentStreak
-        break
-      case "task_count":
-        actualValue = recentTasks.filter((t) => t.status === target).length
-        break
-      case "xp_total":
-        actualValue = userProfile.totalXP
-        break
-      case "custom":
-        actualValue = await this.getCustomValue(target, userProfile, systemEvents)
-        break
-      default:
-        return false
-    }
+        return userProfile.streak >= requirement.condition
 
-    return this.compareValues(actualValue, value, operator)
-  }
+      case "tasks":
+        return (userProfile.completedTasks || 0) >= requirement.condition
 
-  private compareValues(actual: any, expected: any, operator: string): boolean {
-    switch (operator) {
-      case "gte":
-        return actual >= expected
-      case "lte":
-        return actual <= expected
-      case "eq":
-        return actual === expected
-      case "contains":
-        return String(actual).includes(String(expected))
+      case "time":
+        const accountAge = Date.now() - new Date(userProfile.createdAt || Date.now()).getTime()
+        return accountAge >= requirement.condition
+
+      case "pattern":
+        // This would require additional tracking in the user profile
+        return false // Placeholder for pattern-based achievements
+
       default:
         return false
     }
   }
 
-  private async getCustomValue(target: string, userProfile: UserProfile, systemEvents: SystemEvent[]): Promise<number> {
-    switch (target) {
-      case "synergy_activations":
-        // Count events where multiple stats were improved simultaneously
-        return systemEvents.filter(
-          (e) => e.eventType === "stat_threshold" && Object.keys(e.eventData.statChanges || {}).length > 1,
-        ).length
-      default:
-        return 0
-    }
-  }
-
-  private async awardAchievement(userId: string, achievement: Achievement): Promise<void> {
-    // This would save to database
-    console.log(`Awarding achievement ${achievement.id} to user ${userId}`)
-
-    // Apply rewards using immutable laws
-    if (achievement.xpReward > 0) {
-      // Award XP following Law 5 (Effort Transparency)
-      await this.awardXPWithExplanation(userId, achievement.xpReward, `Achievement: ${achievement.title}`)
-    }
-
-    if (Object.keys(achievement.statRewards).length > 0) {
-      // Award stat increases following Law 6 (No Punishment Economy)
-      await this.awardStatIncreases(userId, achievement.statRewards)
-    }
-  }
-
-  private async awardXPWithExplanation(userId: string, xp: number, reason: string): Promise<void> {
-    // Implementation would follow IMMUTABLE_LAWS.XP_EXPLANATION requirements
-    const explanation = {
-      base_xp: xp,
-      difficulty_multiplier: 1.0,
-      time_multiplier: 1.0,
-      quality_bonus: 0,
-      streak_bonus: 0,
-      total_xp: xp,
-      reason,
-    }
-
-    console.log(`XP Award Explanation for ${userId}:`, explanation)
-  }
-
-  private async awardStatIncreases(userId: string, statRewards: Record<string, number>): Promise<void> {
-    // Apply synergy bonuses following Law 9 (Positive Sum Growth)
-    const synergyMultiplier = IMMUTABLE_LAWS.SYNERGY_SYSTEM.NO_NEGATIVE_INTERACTIONS
-      ? this.calculateSynergyBonus(statRewards)
-      : 1.0
-
-    const adjustedRewards: Record<string, number> = {}
-    Object.entries(statRewards).forEach(([stat, value]) => {
-      adjustedRewards[stat] = Math.round(value * synergyMultiplier)
-    })
-
-    console.log(`Stat rewards for ${userId}:`, adjustedRewards)
-  }
-
-  private calculateSynergyBonus(statRewards: Record<string, number>): number {
-    // Implementation of synergy calculation from immutable laws
-    return 1.0 // Simplified for now
-  }
-
-  async getUserAchievements(userId: string): Promise<Achievement[]> {
-    // This would fetch from database
-    return []
-  }
-
-  async triggerAchievementCeremony(achievement: Achievement): Promise<CeremonyContent> {
-    // Return ceremony content for frontend to display
-    return achievement.ceremonyContent
+  getAchievementById(id: string): Achievement | undefined {
+    return this.achievements.find((achievement) => achievement.id === id)
   }
 
   getAchievementsByCategory(category: Achievement["category"]): Achievement[] {
-    return this.achievements.filter((a) => a.category === category)
+    return this.achievements.filter((achievement) => achievement.category === category)
   }
 
-  getSecretAchievements(): Achievement[] {
-    return this.achievements.filter((a) => a.secretAchievement)
+  getAchievementsByRarity(rarity: Achievement["rarity"]): Achievement[] {
+    return this.achievements.filter((achievement) => achievement.rarity === rarity)
+  }
+
+  getVisibleAchievements(): Achievement[] {
+    return this.achievements.filter((achievement) => !achievement.hidden)
+  }
+
+  calculateAchievementProgress(
+    achievement: Achievement,
+    userProfile: UserProfile,
+  ): { progress: number; total: number; percentage: number } {
+    let totalProgress = 0
+    let maxProgress = 0
+
+    for (const requirement of achievement.requirements) {
+      const { current, max } = this.getRequirementProgress(requirement, userProfile)
+      totalProgress += Math.min(current, max)
+      maxProgress += max
+    }
+
+    return {
+      progress: totalProgress,
+      total: maxProgress,
+      percentage: maxProgress > 0 ? (totalProgress / maxProgress) * 100 : 0,
+    }
+  }
+
+  private getRequirementProgress(
+    requirement: AchievementRequirement,
+    userProfile: UserProfile,
+  ): { current: number; max: number } {
+    switch (requirement.type) {
+      case "level":
+        return { current: userProfile.level, max: requirement.condition }
+
+      case "stat":
+        if (requirement.condition.all) {
+          const minStat = Math.min(...Object.values(userProfile.stats || {}))
+          return { current: minStat, max: requirement.condition.all }
+        }
+        if (requirement.condition.any) {
+          const maxStat = Math.max(...Object.values(userProfile.stats || {}))
+          return { current: maxStat, max: requirement.condition.any }
+        }
+        // For specific stat requirements, return the first one
+        const [stat, value] = Object.entries(requirement.condition)[0]
+        return { current: userProfile.stats?.[stat] || 0, max: value }
+
+      case "streak":
+        return { current: userProfile.streak, max: requirement.condition }
+
+      case "tasks":
+        return { current: userProfile.completedTasks || 0, max: requirement.condition }
+
+      case "time":
+        const accountAge = Date.now() - new Date(userProfile.createdAt || Date.now()).getTime()
+        return { current: accountAge, max: requirement.condition }
+
+      default:
+        return { current: 0, max: 1 }
+    }
   }
 }
 

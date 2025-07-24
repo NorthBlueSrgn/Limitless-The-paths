@@ -1,344 +1,438 @@
--- The Order Database Schema
--- Implements all core tables for the gamification system
+-- The Order: Gamification System Database Schema
+-- This schema implements the immutable laws and supports the full system
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table with comprehensive profile data
+-- Users table - Core user profiles
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    username VARCHAR(100) UNIQUE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    password_hash VARCHAR(255) NOT NULL,
     
-    -- Core Stats (0-100 scale)
-    stats JSONB NOT NULL DEFAULT '{
-        "spiritual": 0,
-        "health": 0, 
-        "intelligence": 0,
-        "physical": 0,
-        "creativity": 0,
-        "resilience": 0
-    }',
+    -- Profile Information
+    title VARCHAR(100) DEFAULT 'Seeker',
+    rank VARCHAR(50) DEFAULT 'Novice',
+    hunter_type VARCHAR(50) DEFAULT 'Balanced',
     
-    -- Progression System
-    total_xp INTEGER DEFAULT 0,
-    current_rank VARCHAR(50) DEFAULT 'Initiate',
-    rank_progress INTEGER DEFAULT 0,
+    -- Core Progression
     level INTEGER DEFAULT 1,
-    
-    -- Streaks and Patterns
+    total_xp BIGINT DEFAULT 0,
     current_streak INTEGER DEFAULT 0,
     longest_streak INTEGER DEFAULT 0,
-    last_task_completion TIMESTAMP WITH TIME ZONE,
     
-    -- Behavioral Patterns
-    preferred_task_types TEXT[] DEFAULT '{}',
-    average_session_length INTEGER DEFAULT 0,
-    most_active_time_of_day VARCHAR(20),
-    weekly_activity_pattern INTEGER[] DEFAULT '{0,0,0,0,0,0,0}',
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    -- Narrative State
-    current_story_arc VARCHAR(100) DEFAULT 'awakening',
-    completed_arcs TEXT[] DEFAULT '{}',
-    narrative_choices JSONB DEFAULT '{}',
-    
-    -- Metadata
-    timezone VARCHAR(50) DEFAULT 'UTC',
-    preferences JSONB DEFAULT '{
-        "difficultyPreference": "adaptive",
-        "notificationSettings": {
-            "dailyReminders": true,
-            "achievementAlerts": true,
-            "streakWarnings": true,
-            "weeklyReports": true
-        },
-        "themePreference": "dark",
-        "aiPersonality": "mentor"
-    }'
+    -- Constraints
+    CONSTRAINT valid_level CHECK (level >= 1),
+    CONSTRAINT valid_xp CHECK (total_xp >= 0),
+    CONSTRAINT valid_streak CHECK (current_streak >= 0)
 );
 
--- Paths table for skill/growth paths
-CREATE TABLE paths (
+-- User Stats - The six core immutable stats
+CREATE TABLE user_stats (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    category VARCHAR(50) NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    -- Progression
-    current_level INTEGER DEFAULT 1,
-    total_xp INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT true,
-    unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    -- Requirements
-    prerequisites JSONB DEFAULT '[]',
+    -- The Six Core Stats (Immutable Law)
+    physical INTEGER DEFAULT 0,
+    mental INTEGER DEFAULT 0,
+    emotional INTEGER DEFAULT 0,
+    social INTEGER DEFAULT 0,
+    creative INTEGER DEFAULT 0,
+    spiritual INTEGER DEFAULT 0,
     
     -- Metadata
-    difficulty VARCHAR(20) DEFAULT 'beginner',
-    estimated_duration INTEGER, -- days
-    tags TEXT[] DEFAULT '{}'
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraints (No Punishment Economy - stats never decrease)
+    CONSTRAINT valid_physical CHECK (physical >= 0),
+    CONSTRAINT valid_mental CHECK (mental >= 0),
+    CONSTRAINT valid_emotional CHECK (emotional >= 0),
+    CONSTRAINT valid_social CHECK (social >= 0),
+    CONSTRAINT valid_creative CHECK (creative >= 0),
+    CONSTRAINT valid_spiritual CHECK (spiritual >= 0),
+    
+    UNIQUE(user_id)
 );
 
--- Tasks table with comprehensive tracking
+-- Tasks table - User tasks and challenges
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    -- Core Properties
-    title VARCHAR(300) NOT NULL,
-    description TEXT,
-    category VARCHAR(100) NOT NULL,
-    difficulty INTEGER CHECK (difficulty >= 1 AND difficulty <= 5),
-    
-    -- Rewards
-    xp_reward INTEGER DEFAULT 0,
-    stat_rewards JSONB DEFAULT '{}',
-    
-    -- Scheduling
-    type VARCHAR(20) DEFAULT 'daily',
-    due_date TIMESTAMP WITH TIME ZONE,
-    estimated_minutes INTEGER DEFAULT 30,
-    
-    -- State
-    status VARCHAR(20) DEFAULT 'pending',
-    completed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    -- AI Generation Context
-    generated_by VARCHAR(20) DEFAULT 'system',
-    generation_context JSONB DEFAULT '{}',
-    
-    -- Adaptive Learning
-    actual_difficulty INTEGER,
-    completion_time INTEGER,
-    user_rating INTEGER CHECK (user_rating >= 1 AND user_rating <= 5)
-);
-
--- Chat messages for AI interaction
-CREATE TABLE chat_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Message Content
-    content TEXT NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    -- Context
-    message_type VARCHAR(50) DEFAULT 'casual',
-    context_data JSONB DEFAULT '{}',
-    
-    -- AI Metadata
-    tokens_used INTEGER,
-    response_time INTEGER,
-    confidence DECIMAL(3,2)
-);
-
--- Achievements table
-CREATE TABLE achievements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Achievement Details
-    achievement_id VARCHAR(100) NOT NULL, -- References achievement definition
-    title VARCHAR(200) NOT NULL,
+    -- Task Details
+    title VARCHAR(255) NOT NULL,
     description TEXT,
     category VARCHAR(50),
-    rarity VARCHAR(20),
+    difficulty VARCHAR(20) CHECK (difficulty IN ('easy', 'medium', 'hard', 'extreme')),
     
-    -- Unlock Details
-    unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    trigger_condition TEXT,
+    -- XP and Rewards (Immutable Law: Proportional to difficulty)
+    base_xp INTEGER NOT NULL,
+    actual_xp INTEGER, -- After bonuses and multipliers
+    primary_stat VARCHAR(20),
+    secondary_stats TEXT[], -- Array of secondary stats for synergy
+    
+    -- Status and Timing
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'failed', 'paused')),
+    due_date TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    
+    -- AI Generation Context
+    generated_by_ai BOOLEAN DEFAULT false,
+    ai_context JSONB,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraints
+    CONSTRAINT valid_base_xp CHECK (base_xp >= 10 AND base_xp <= 1000), -- Immutable Law bounds
+    CONSTRAINT valid_actual_xp CHECK (actual_xp >= base_xp) -- No punishment economy
+);
+
+-- Achievements table - System achievements
+CREATE TABLE achievements (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    rarity VARCHAR(20) NOT NULL CHECK (rarity IN ('common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic')),
+    category VARCHAR(50) NOT NULL,
+    icon VARCHAR(10),
+    
+    -- Requirements (stored as JSONB for flexibility)
+    requirements JSONB NOT NULL,
     
     -- Rewards
     xp_reward INTEGER DEFAULT 0,
-    title_unlocked VARCHAR(200),
-    path_unlocked VARCHAR(100)
+    title_reward VARCHAR(100),
+    unlocks TEXT[],
+    
+    -- Metadata
+    hidden BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- System events for tracking important occurrences
-CREATE TABLE system_events (
+-- User Achievements - Junction table
+CREATE TABLE user_achievements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    achievement_id VARCHAR(50) NOT NULL REFERENCES achievements(id),
     
-    -- Event Details
-    event_type VARCHAR(50) NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Achievement context
+    unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    progress_data JSONB, -- Store progress snapshots
     
-    -- Data
-    event_data JSONB DEFAULT '{}',
-    
-    -- AI Response
-    ai_response TEXT,
-    user_reaction VARCHAR(20)
+    UNIQUE(user_id, achievement_id)
 );
 
--- Narrative state tracking
-CREATE TABLE narrative_states (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+-- Paths table - Growth paths and specializations
+CREATE TABLE paths (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    category VARCHAR(50),
     
-    -- Narrative Progress
-    current_arc VARCHAR(100) NOT NULL,
-    arc_progress INTEGER DEFAULT 0,
-    available_choices JSONB DEFAULT '[]',
-    completed_milestones TEXT[] DEFAULT '{}',
+    -- Requirements and unlocks
+    required_level INTEGER DEFAULT 1,
+    required_achievements TEXT[],
+    unlocked_by TEXT[],
     
-    -- Character Development
-    character_traits JSONB DEFAULT '[]',
+    -- Path interconnection (Immutable Law)
+    primary_stats TEXT[] NOT NULL, -- Must contribute to at least one core stat
+    synergy_paths TEXT[], -- Paths that synergize with this one
     
-    -- World State
-    world_state JSONB DEFAULT '{
-        "orderInfluence": 0,
-        "chaosLevel": 0,
-        "discoveredSecrets": [],
-        "unlockedRegions": [],
-        "allyRelationships": {}
-    }',
-    
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- User analytics for pattern recognition
-CREATE TABLE user_analytics (
+-- User Paths - User's active and completed paths
+CREATE TABLE user_paths (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    path_id VARCHAR(50) NOT NULL REFERENCES paths(id),
     
-    -- Time Period
-    period_start TIMESTAMP WITH TIME ZONE NOT NULL,
-    period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- Progress
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused')),
+    progress_percentage DECIMAL(5,2) DEFAULT 0.00,
+    xp_invested INTEGER DEFAULT 0,
     
-    -- Metrics
-    task_completion_rate DECIMAL(5,2),
-    most_active_categories TEXT[],
-    average_session_length INTEGER,
-    streak_patterns JSONB,
-    engagement_level VARCHAR(20),
+    -- Timestamps
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
     
-    -- Insights
-    growth_areas TEXT[],
-    recommendations TEXT[],
+    UNIQUE(user_id, path_id)
+);
+
+-- Story Progress - Narrative system tracking
+CREATE TABLE story_progress (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    calculated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    -- Story tracking
+    current_arc VARCHAR(50) NOT NULL,
+    completed_chapters TEXT[] DEFAULT '{}',
+    current_chapter VARCHAR(50),
+    
+    -- Choices and consequences
+    story_choices JSONB DEFAULT '{}',
+    narrative_state JSONB DEFAULT '{}',
+    
+    -- Timestamps
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    UNIQUE(user_id)
+);
+
+-- AI Messages - Chat history with The Order
+CREATE TABLE ai_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Message content
+    content TEXT NOT NULL,
+    message_type VARCHAR(20) NOT NULL CHECK (message_type IN ('user', 'assistant')),
+    category VARCHAR(50),
+    
+    -- Context
+    user_context JSONB, -- User state when message was sent
+    ai_context JSONB, -- AI reasoning and context
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- XP Transactions - Audit trail for all XP changes (Effort Transparency)
+CREATE TABLE xp_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Transaction details
+    amount INTEGER NOT NULL,
+    source VARCHAR(100) NOT NULL, -- task_completion, achievement, bonus, etc.
+    source_id UUID, -- Reference to task, achievement, etc.
+    
+    -- Transparency (Immutable Law)
+    base_amount INTEGER NOT NULL,
+    difficulty_multiplier DECIMAL(3,2) DEFAULT 1.00,
+    streak_multiplier DECIMAL(3,2) DEFAULT 1.00,
+    synergy_bonus DECIMAL(3,2) DEFAULT 0.00,
+    explanation TEXT NOT NULL,
+    
+    -- Validation
+    validated_by_laws BOOLEAN DEFAULT true,
+    law_violations TEXT[],
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraints (No Punishment Economy)
+    CONSTRAINT no_negative_xp CHECK (amount >= 0)
+);
+
+-- Stat Transactions - Audit trail for stat changes
+CREATE TABLE stat_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Stat change details
+    stat_name VARCHAR(20) NOT NULL,
+    amount INTEGER NOT NULL,
+    source VARCHAR(100) NOT NULL,
+    source_id UUID,
+    
+    -- Synergy tracking (Positive Sum Growth)
+    primary_stat BOOLEAN DEFAULT false,
+    synergy_bonus DECIMAL(3,2) DEFAULT 0.00,
+    affected_stats JSONB, -- Other stats that benefited
+    
+    -- Validation
+    explanation TEXT NOT NULL,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraints (No Punishment Economy)
+    CONSTRAINT no_negative_stats CHECK (amount >= 0)
+);
+
+-- System Analytics - Track patterns and insights
+CREATE TABLE system_analytics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Analytics data
+    metric_name VARCHAR(100) NOT NULL,
+    metric_value DECIMAL(10,2),
+    dimensions JSONB, -- Additional context
+    
+    -- Time series
+    recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    time_bucket VARCHAR(20) -- hourly, daily, weekly, monthly
 );
 
 -- Indexes for performance
-CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_current_rank ON users(current_rank);
+CREATE INDEX idx_users_level ON users(level);
 CREATE INDEX idx_users_last_active ON users(last_active);
 
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_due_date ON tasks(due_date);
-CREATE INDEX idx_tasks_type ON tasks(type);
-CREATE INDEX idx_tasks_category ON tasks(category);
-CREATE INDEX idx_tasks_completed_at ON tasks(completed_at);
+CREATE INDEX idx_tasks_difficulty ON tasks(difficulty);
 
-CREATE INDEX idx_chat_messages_user_id ON chat_messages(user_id);
-CREATE INDEX idx_chat_messages_timestamp ON chat_messages(timestamp);
-CREATE INDEX idx_chat_messages_message_type ON chat_messages(message_type);
+CREATE INDEX idx_user_achievements_user_id ON user_achievements(user_id);
+CREATE INDEX idx_user_achievements_unlocked_at ON user_achievements(unlocked_at);
 
-CREATE INDEX idx_achievements_user_id ON achievements(user_id);
-CREATE INDEX idx_achievements_unlocked_at ON achievements(unlocked_at);
-CREATE INDEX idx_achievements_category ON achievements(category);
-CREATE INDEX idx_achievements_achievement_id ON achievements(achievement_id);
+CREATE INDEX idx_user_paths_user_id ON user_paths(user_id);
+CREATE INDEX idx_user_paths_status ON user_paths(status);
 
-CREATE INDEX idx_system_events_user_id ON system_events(user_id);
-CREATE INDEX idx_system_events_event_type ON system_events(event_type);
-CREATE INDEX idx_system_events_timestamp ON system_events(timestamp);
+CREATE INDEX idx_ai_messages_user_id ON ai_messages(user_id);
+CREATE INDEX idx_ai_messages_created_at ON ai_messages(created_at);
 
-CREATE INDEX idx_narrative_states_user_id ON narrative_states(user_id);
-CREATE INDEX idx_narrative_states_current_arc ON narrative_states(current_arc);
+CREATE INDEX idx_xp_transactions_user_id ON xp_transactions(user_id);
+CREATE INDEX idx_xp_transactions_created_at ON xp_transactions(created_at);
 
-CREATE INDEX idx_user_analytics_user_id ON user_analytics(user_id);
-CREATE INDEX idx_user_analytics_period ON user_analytics(period_start, period_end);
-
--- Composite indexes for common queries
-CREATE INDEX idx_tasks_user_status_due ON tasks(user_id, status, due_date);
-CREATE INDEX idx_chat_messages_user_timestamp ON chat_messages(user_id, timestamp DESC);
-CREATE INDEX idx_system_events_user_type_timestamp ON system_events(user_id, event_type, timestamp DESC);
+CREATE INDEX idx_stat_transactions_user_id ON stat_transactions(user_id);
+CREATE INDEX idx_stat_transactions_stat_name ON stat_transactions(stat_name);
 
 -- Triggers for automatic updates
-CREATE OR REPLACE FUNCTION update_user_last_active()
+
+-- Update user level based on total XP
+CREATE OR REPLACE FUNCTION update_user_level()
 RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE users SET last_active = NOW() WHERE id = NEW.user_id;
+    NEW.level = GREATEST(1, FLOOR(NEW.total_xp / 1000) + 1);
+    NEW.updated_at = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_update_last_active_on_task
-    AFTER INSERT OR UPDATE ON tasks
+CREATE TRIGGER trigger_update_user_level
+    BEFORE UPDATE OF total_xp ON users
     FOR EACH ROW
-    EXECUTE FUNCTION update_user_last_active();
+    EXECUTE FUNCTION update_user_level();
 
-CREATE TRIGGER trigger_update_last_active_on_chat
-    AFTER INSERT ON chat_messages
-    FOR EACH ROW
-    EXECUTE FUNCTION update_user_last_active();
-
--- Function to calculate user rank based on stats
-CREATE OR REPLACE FUNCTION calculate_user_rank(user_stats JSONB)
-RETURNS VARCHAR(50) AS $$
-DECLARE
-    avg_stat DECIMAL;
-BEGIN
-    avg_stat := (
-        (user_stats->>'spiritual')::INTEGER +
-        (user_stats->>'health')::INTEGER +
-        (user_stats->>'intelligence')::INTEGER +
-        (user_stats->>'physical')::INTEGER +
-        (user_stats->>'creativity')::INTEGER +
-        (user_stats->>'resilience')::INTEGER
-    ) / 6.0;
-    
-    IF avg_stat >= 80 THEN RETURN 'Transcendent';
-    ELSIF avg_stat >= 70 THEN RETURN 'Sage';
-    ELSIF avg_stat >= 60 THEN RETURN 'Master';
-    ELSIF avg_stat >= 45 THEN RETURN 'Expert';
-    ELSIF avg_stat >= 30 THEN RETURN 'Adept';
-    ELSIF avg_stat >= 15 THEN RETURN 'Seeker';
-    ELSE RETURN 'Initiate';
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to auto-update rank when stats change
+-- Update user rank based on level and stats
 CREATE OR REPLACE FUNCTION update_user_rank()
 RETURNS TRIGGER AS $$
 DECLARE
-    new_rank VARCHAR(50);
+    user_level INTEGER;
+    max_stat INTEGER;
+    total_stats INTEGER;
 BEGIN
-    new_rank := calculate_user_rank(NEW.stats);
+    SELECT level INTO user_level FROM users WHERE id = NEW.user_id;
     
-    IF new_rank != NEW.current_rank THEN
-        NEW.current_rank := new_rank;
-        
-        -- Create rank up event
-        INSERT INTO system_events (user_id, event_type, event_data)
-        VALUES (NEW.id, 'rank_up', json_build_object(
-            'oldRank', OLD.current_rank,
-            'newRank', new_rank,
-            'averageStat', (
-                (NEW.stats->>'spiritual')::INTEGER +
-                (NEW.stats->>'health')::INTEGER +
-                (NEW.stats->>'intelligence')::INTEGER +
-                (NEW.stats->>'physical')::INTEGER +
-                (NEW.stats->>'creativity')::INTEGER +
-                (NEW.stats->>'resilience')::INTEGER
-            ) / 6.0
-        ));
+    SELECT GREATEST(NEW.physical, NEW.mental, NEW.emotional, NEW.social, NEW.creative, NEW.spiritual) INTO max_stat;
+    SELECT (NEW.physical + NEW.mental + NEW.emotional + NEW.social + NEW.creative + NEW.spiritual) INTO total_stats;
+    
+    -- Update rank based on progression
+    UPDATE users SET 
+        rank = CASE 
+            WHEN user_level >= 100 AND max_stat >= 75 THEN 'Transcendent'
+            WHEN user_level >= 75 AND max_stat >= 50 THEN 'Master'
+            WHEN user_level >= 50 AND max_stat >= 35 THEN 'Expert'
+            WHEN user_level >= 25 AND max_stat >= 20 THEN 'Adept'
+            WHEN user_level >= 10 AND max_stat >= 10 THEN 'Apprentice'
+            ELSE 'Novice'
+        END,
+        hunter_type = CASE
+            WHEN NEW.physical = max_stat THEN 'Enhancer'
+            WHEN NEW.mental = max_stat THEN 'Specialist'
+            WHEN NEW.emotional = max_stat THEN 'Manipulator'
+            WHEN NEW.social = max_stat THEN 'Emitter'
+            WHEN NEW.creative = max_stat THEN 'Transmuter'
+            WHEN NEW.spiritual = max_stat THEN 'Conjurer'
+            ELSE 'Balanced'
+        END,
+        updated_at = NOW()
+    WHERE id = NEW.user_id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_user_rank
+    AFTER UPDATE ON user_stats
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_rank();
+
+-- Streak tracking function
+CREATE OR REPLACE FUNCTION update_streak()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update last_active and potentially streak
+    NEW.last_active = NOW();
+    
+    -- If last active was yesterday, increment streak
+    -- If last active was today, keep current streak
+    -- If last active was more than 1 day ago, reset streak
+    IF OLD.last_active::date = (CURRENT_DATE - INTERVAL '1 day')::date THEN
+        NEW.current_streak = OLD.current_streak + 1;
+        NEW.longest_streak = GREATEST(OLD.longest_streak, NEW.current_streak);
+    ELSIF OLD.last_active::date < (CURRENT_DATE - INTERVAL '1 day')::date THEN
+        NEW.current_streak = 1;
     END IF;
     
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_update_rank_on_stats_change
-    BEFORE UPDATE OF stats ON users
+CREATE TRIGGER trigger_update_streak
+    BEFORE UPDATE OF last_active ON users
     FOR EACH ROW
-    EXECUTE FUNCTION update_user_rank();
+    EXECUTE FUNCTION update_streak();
+
+-- Insert default data
+
+-- Insert core achievements
+INSERT INTO achievements (id, title, description, rarity, category, icon, requirements, xp_reward, title_reward) VALUES
+('first_steps', 'First Steps', 'Complete your first task in the system', 'common', 'progress', '👣', '{"tasks": 1}', 50, 'Initiate'),
+('week_warrior', 'Week Warrior', 'Maintain a 7-day streak', 'common', 'consistency', '🔥', '{"streak": 7}', 100, null),
+('balanced_growth', 'Balanced Growth', 'Reach level 10 in all core stats', 'uncommon', 'mastery', '⚖️', '{"stats": {"all": 10}}', 250, 'Balanced One'),
+('specialist', 'Specialist', 'Reach level 25 in any single stat', 'rare', 'mastery', '🎯', '{"stats": {"any": 25}}', 750, 'Specialist'),
+('polymath', 'Polymath', 'Reach level 20 in all core stats', 'epic', 'mastery', '🧠', '{"stats": {"all": 20}}', 1500, 'Polymath'),
+('master_of_all', 'Master of All', 'Reach level 50 in all core stats', 'legendary', 'mastery', '👑', '{"stats": {"all": 50}}', 5000, 'Grandmaster'),
+('transcendent', 'Transcendent', 'Reach the highest level of mastery', 'mythic', 'transcendence', '✨', '{"level": 100, "stats": {"all": 75}, "tasks": 1000}', 10000, 'Transcendent');
+
+-- Insert core paths
+INSERT INTO paths (id, name, description, category, required_level, primary_stats) VALUES
+('physical_mastery', 'Physical Mastery', 'Develop your physical capabilities and endurance', 'enhancement', 1, ARRAY['physical']),
+('mental_fortress', 'Mental Fortress', 'Strengthen your mind and cognitive abilities', 'specialization', 1, ARRAY['mental']),
+('emotional_intelligence', 'Emotional Intelligence', 'Master your emotions and develop empathy', 'manipulation', 1, ARRAY['emotional']),
+('social_dynamics', 'Social Dynamics', 'Understand and influence social interactions', 'emission', 1, ARRAY['social']),
+('creative_expression', 'Creative Expression', 'Unlock your creative potential', 'transmutation', 1, ARRAY['creative']),
+('spiritual_awakening', 'Spiritual Awakening', 'Explore the deeper mysteries of existence', 'conjuration', 1, ARRAY['spiritual']),
+('balanced_harmony', 'Balanced Harmony', 'Achieve perfect balance across all aspects', 'transcendence', 10, ARRAY['physical', 'mental', 'emotional', 'social', 'creative', 'spiritual']);
+
+-- Create function to initialize new user
+CREATE OR REPLACE FUNCTION initialize_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Create default stats entry
+    INSERT INTO user_stats (user_id) VALUES (NEW.id);
+    
+    -- Create default story progress
+    INSERT INTO story_progress (user_id, current_arc) VALUES (NEW.id, 'awakening');
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_initialize_new_user
+    AFTER INSERT ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION initialize_new_user();
+
+-- Comments for documentation
+COMMENT ON TABLE users IS 'Core user profiles with progression tracking';
+COMMENT ON TABLE user_stats IS 'The six immutable core stats that define human growth';
+COMMENT ON TABLE tasks IS 'User tasks with XP rewards following immutable laws';
+COMMENT ON TABLE xp_transactions IS 'Complete audit trail for XP changes (Effort Transparency)';
+COMMENT ON TABLE stat_transactions IS 'Complete audit trail for stat changes (No Punishment Economy)';
+COMMENT ON COLUMN xp_transactions.explanation IS 'Human-readable explanation of XP award (Immutable Law: Effort Transparency)';
+COMMENT ON CONSTRAINT no_negative_xp ON xp_transactions IS 'Immutable Law: No Punishment Economy - XP cannot be removed';
+COMMENT ON CONSTRAINT no_negative_stats ON stat_transactions IS 'Immutable Law: No Punishment Economy - Stats cannot decrease';

@@ -5,290 +5,280 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Sparkles, Crown, Zap, Award, Flame } from "lucide-react"
+import { Trophy, Star, Sparkles, Crown, Zap, X, ChevronRight } from "lucide-react"
 import type { Achievement } from "@/lib/achievements/achievement-engine"
 
 interface AchievementCeremonyProps {
-  achievement: Achievement
-  isVisible: boolean
-  onComplete: () => void
+  achievement: Achievement | null
+  isOpen: boolean
+  onClose: () => void
+  onClaim: (achievementId: string) => void
 }
 
 const rarityConfig = {
   common: {
-    color: "text-gray-400",
-    bgColor: "bg-gray-500/20",
-    borderColor: "border-gray-500/30",
-    icon: Award,
-    particles: 20,
+    color: "from-gray-400 to-gray-600",
+    textColor: "text-gray-300",
+    borderColor: "border-gray-500",
+    bgColor: "bg-gray-900/80",
+    particles: 10,
+    icon: Trophy,
+  },
+  uncommon: {
+    color: "from-green-400 to-green-600",
+    textColor: "text-green-300",
+    borderColor: "border-green-500",
+    bgColor: "bg-green-900/80",
+    particles: 15,
+    icon: Star,
   },
   rare: {
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/20",
-    borderColor: "border-blue-500/30",
-    icon: Star,
-    particles: 40,
+    color: "from-blue-400 to-blue-600",
+    textColor: "text-blue-300",
+    borderColor: "border-blue-500",
+    bgColor: "bg-blue-900/80",
+    particles: 20,
+    icon: Sparkles,
   },
   epic: {
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/20",
-    borderColor: "border-purple-500/30",
-    icon: Sparkles,
-    particles: 60,
+    color: "from-purple-400 to-purple-600",
+    textColor: "text-purple-300",
+    borderColor: "border-purple-500",
+    bgColor: "bg-purple-900/80",
+    particles: 25,
+    icon: Crown,
   },
   legendary: {
-    color: "text-yellow-400",
-    bgColor: "bg-yellow-500/20",
-    borderColor: "border-yellow-500/30",
-    icon: Crown,
-    particles: 100,
+    color: "from-orange-400 to-orange-600",
+    textColor: "text-orange-300",
+    borderColor: "border-orange-500",
+    bgColor: "bg-orange-900/80",
+    particles: 30,
+    icon: Zap,
   },
   mythic: {
-    color: "text-red-400",
-    bgColor: "bg-red-500/20",
-    borderColor: "border-red-500/30",
-    icon: Flame,
-    particles: 150,
+    color: "from-pink-400 via-purple-500 to-indigo-600",
+    textColor: "text-pink-300",
+    borderColor: "border-pink-500",
+    bgColor: "bg-gradient-to-br from-pink-900/80 to-indigo-900/80",
+    particles: 50,
+    icon: Sparkles,
   },
 }
 
-export function AchievementCeremony({ achievement, isVisible, onComplete }: AchievementCeremonyProps) {
-  const [currentPhase, setCurrentPhase] = useState(0)
-  const [showInteractive, setShowInteractive] = useState(false)
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([])
-
-  const config = rarityConfig[achievement.rarity]
-  const Icon = config.icon
+export function AchievementCeremony({ achievement, isOpen, onClose, onClaim }: AchievementCeremonyProps) {
+  const [showParticles, setShowParticles] = useState(false)
+  const [claimed, setClaimed] = useState(false)
 
   useEffect(() => {
-    if (isVisible) {
-      // Generate particles
-      const newParticles = Array.from({ length: config.particles }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        delay: Math.random() * 2,
-      }))
-      setParticles(newParticles)
+    if (isOpen && achievement) {
+      setShowParticles(true)
+      setClaimed(false)
 
-      // Phase progression
-      const timer = setTimeout(() => {
-        setCurrentPhase(1)
-        setTimeout(() => {
-          setShowInteractive(true)
-        }, 1000)
-      }, 500)
-
+      // Auto-hide particles after animation
+      const timer = setTimeout(() => setShowParticles(false), 3000)
       return () => clearTimeout(timer)
     }
-  }, [isVisible, config.particles])
+  }, [isOpen, achievement])
 
-  if (!isVisible) return null
+  if (!achievement) return null
+
+  const config = rarityConfig[achievement.rarity]
+  const IconComponent = config.icon
+
+  const handleClaim = () => {
+    setClaimed(true)
+    onClaim(achievement.id)
+
+    // Close after a brief delay
+    setTimeout(() => {
+      onClose()
+    }, 1500)
+  }
+
+  const particles = Array.from({ length: config.particles }, (_, i) => (
+    <motion.div
+      key={i}
+      className="absolute w-1 h-1 bg-white rounded-full"
+      initial={{
+        x: "50%",
+        y: "50%",
+        scale: 0,
+        opacity: 0,
+      }}
+      animate={
+        showParticles
+          ? {
+              x: `${50 + (Math.random() - 0.5) * 200}%`,
+              y: `${50 + (Math.random() - 0.5) * 200}%`,
+              scale: Math.random() * 2 + 0.5,
+              opacity: [0, 1, 0],
+            }
+          : {}
+      }
+      transition={{
+        duration: 2 + Math.random() * 2,
+        ease: "easeOut",
+        delay: Math.random() * 0.5,
+      }}
+    />
+  ))
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      >
-        {/* Particle Effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          {particles.map((particle) => (
-            <motion.div
-              key={particle.id}
-              initial={{
-                opacity: 0,
-                scale: 0,
-                x: `${particle.x}vw`,
-                y: `${particle.y}vh`,
-              }}
-              animate={{
-                opacity: [0, 1, 0],
-                scale: [0, 1, 0],
-                y: `${particle.y - 20}vh`,
-              }}
-              transition={{
-                duration: 3,
-                delay: particle.delay,
-                repeat: Number.POSITIVE_INFINITY,
-                repeatDelay: 2,
-              }}
-              className={`absolute w-1 h-1 ${config.bgColor} rounded-full`}
-            />
-          ))}
-        </div>
-
-        {/* Main Achievement Card */}
+      {isOpen && (
         <motion.div
-          initial={{ scale: 0, rotateY: -180 }}
-          animate={{
-            scale: currentPhase >= 1 ? 1 : 0,
-            rotateY: currentPhase >= 1 ? 0 : -180,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 200,
-            damping: 20,
-            duration: 1,
-          }}
-          className="relative"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
         >
-          <Card className={`w-96 ${config.bgColor} ${config.borderColor} border-2 backdrop-blur-xl`}>
-            <CardContent className="p-8 text-center">
-              {/* Achievement Icon */}
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{
-                  scale: currentPhase >= 1 ? 1 : 0,
-                  rotate: currentPhase >= 1 ? 0 : -180,
-                }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className={`mx-auto mb-6 p-4 rounded-full ${config.bgColor} ${config.borderColor} border`}
-              >
-                <Icon className={`w-12 h-12 ${config.color}`} />
-              </motion.div>
-
-              {/* Rarity Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: currentPhase >= 1 ? 1 : 0, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="mb-4"
-              >
-                <Badge
-                  variant="outline"
-                  className={`${config.color} ${config.borderColor} text-sm font-bold uppercase tracking-wider`}
-                >
-                  {achievement.rarity}
-                </Badge>
-              </motion.div>
-
-              {/* Achievement Title */}
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: currentPhase >= 1 ? 1 : 0, y: 0 }}
-                transition={{ delay: 1.0 }}
-                className={`text-2xl font-bold mb-4 ${config.color}`}
-              >
-                {achievement.title}
-              </motion.h2>
-
-              {/* Achievement Description */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: currentPhase >= 1 ? 1 : 0 }}
-                transition={{ delay: 1.2 }}
-                className="text-gray-300 mb-6 leading-relaxed"
-              >
-                {achievement.description}
-              </motion.p>
-
-              {/* Ceremony Content */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: currentPhase >= 1 ? 1 : 0, scale: 1 }}
-                transition={{ delay: 1.4 }}
-                className="mb-6"
-              >
-                <h3 className="text-lg font-semibold text-white mb-2">{achievement.ceremonyContent.title}</h3>
-                <p className="text-purple-300 text-sm leading-relaxed">{achievement.ceremonyContent.description}</p>
-              </motion.div>
-
-              {/* Rewards Display */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: currentPhase >= 1 ? 1 : 0, y: 0 }}
-                transition={{ delay: 1.6 }}
-                className="mb-6 space-y-2"
-              >
-                {achievement.xpReward > 0 && (
-                  <div className="flex items-center justify-center gap-2 text-yellow-400">
-                    <Zap className="w-4 h-4" />
-                    <span className="font-semibold">+{achievement.xpReward.toLocaleString()} XP</span>
-                  </div>
-                )}
-
-                {Object.entries(achievement.statRewards).length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-2 mt-2">
-                    {Object.entries(achievement.statRewards).map(([stat, value]) => (
-                      <Badge key={stat} variant="outline" className="text-green-400 border-green-500/30">
-                        +{value} {stat}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {achievement.titleUnlocked && (
-                  <div className="flex items-center justify-center gap-2 text-purple-400 mt-2">
-                    <Crown className="w-4 h-4" />
-                    <span className="font-semibold">Title: {achievement.titleUnlocked}</span>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Interactive Elements */}
-              <AnimatePresence>
-                {showInteractive && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="space-y-4"
-                  >
-                    {achievement.ceremonyContent.interactiveElements?.map((element, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`p-3 rounded-lg ${config.bgColor} ${config.borderColor} border cursor-pointer transition-all hover:brightness-110`}
-                      >
-                        <span className="text-white text-sm">{element.trigger}</span>
-                      </motion.div>
-                    ))}
-
-                    <Button
-                      onClick={onComplete}
-                      className={`w-full ${config.bgColor} ${config.color} border ${config.borderColor} hover:brightness-110 transition-all`}
-                      variant="outline"
-                    >
-                      Continue Your Journey
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-
-          {/* Glow Effect */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{
-              opacity: currentPhase >= 1 ? [0.3, 0.6, 0.3] : 0,
-              scale: currentPhase >= 1 ? [0.8, 1.2, 0.8] : 0.8,
-            }}
-            transition={{
-              duration: 2,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: "easeInOut",
-            }}
-            className={`absolute inset-0 -z-10 ${config.bgColor} rounded-lg blur-xl`}
-          />
-        </motion.div>
+            initial={{ scale: 0.5, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.5, opacity: 0, y: 50 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="relative max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">{particles}</div>
 
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage: `radial-gradient(circle at 25% 25%, ${config.color.replace("text-", "")} 1px, transparent 1px)`,
-              backgroundSize: "50px 50px",
-            }}
-          />
-        </div>
-      </motion.div>
+            <Card className={`${config.bgColor} ${config.borderColor} border-2 backdrop-blur-xl`}>
+              <CardContent className="p-8 text-center space-y-6">
+                {/* Close Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 text-white/60 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+
+                {/* Achievement Unlocked Header */}
+                <motion.div
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-2"
+                >
+                  <h2 className="text-2xl font-orbitron font-bold text-white">Achievement Unlocked!</h2>
+                  <Badge
+                    variant="outline"
+                    className={`${config.textColor} ${config.borderColor} text-sm font-semibold uppercase tracking-wider`}
+                  >
+                    {achievement.rarity}
+                  </Badge>
+                </motion.div>
+
+                {/* Achievement Icon */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    type: "spring",
+                    damping: 15,
+                    stiffness: 200,
+                    delay: 0.3,
+                  }}
+                  className="relative"
+                >
+                  <div
+                    className={`w-24 h-24 mx-auto rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center shadow-2xl`}
+                  >
+                    <div className="text-4xl">{achievement.icon}</div>
+                  </div>
+
+                  {/* Glow effect */}
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 0.8, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                    className={`absolute inset-0 w-24 h-24 mx-auto rounded-full bg-gradient-to-br ${config.color} blur-xl -z-10`}
+                  />
+                </motion.div>
+
+                {/* Achievement Details */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-3"
+                >
+                  <h3 className="text-xl font-bold text-white">{achievement.title}</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">{achievement.description}</p>
+                </motion.div>
+
+                {/* Rewards */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="space-y-3"
+                >
+                  <h4 className="text-lg font-semibold text-white">Rewards</h4>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Badge variant="secondary" className="bg-yellow-600/20 text-yellow-300 border-yellow-500/30">
+                      +{achievement.rewards.xp} XP
+                    </Badge>
+                    {achievement.rewards.title && (
+                      <Badge variant="secondary" className="bg-purple-600/20 text-purple-300 border-purple-500/30">
+                        Title: {achievement.rewards.title}
+                      </Badge>
+                    )}
+                    {achievement.rewards.unlocks && achievement.rewards.unlocks.length > 0 && (
+                      <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-500/30">
+                        +{achievement.rewards.unlocks.length} Unlocks
+                      </Badge>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Claim Button */}
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6 }}>
+                  <Button
+                    onClick={handleClaim}
+                    disabled={claimed}
+                    className={`w-full bg-gradient-to-r ${config.color} hover:opacity-90 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200`}
+                  >
+                    {claimed ? (
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5" />
+                        Claimed!
+                      </motion.div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        Claim Reward
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    )}
+                  </Button>
+                </motion.div>
+
+                {/* The Order's Message */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="pt-4 border-t border-white/10"
+                >
+                  <p className="text-xs text-gray-400 italic">
+                    "Your dedication has been noted. The Order acknowledges your progress."
+                  </p>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   )
 }

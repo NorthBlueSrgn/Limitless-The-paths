@@ -1,243 +1,206 @@
-// The Order's Immutable Laws - Core System Constants
-// These principles govern all system behavior and cannot be violated
+/**
+ * The Immutable Laws of The Order
+ * These fundamental constants govern all system interactions and cannot be violated
+ */
 
-export const IMMUTABLE_LAWS = {
-  // Law 1: XP-to-Difficulty Proportionality
-  XP_SCALING: {
-    BASE_XP_PER_DIFFICULTY: {
-      1: 25, // Easy tasks
-      2: 50, // Medium tasks
-      3: 100, // Hard tasks
-      4: 200, // Very hard tasks
-      5: 400, // Extreme tasks
-    },
-    EFFORT_MULTIPLIERS: {
-      // Time-based multipliers
-      QUICK_TASK: 0.8, // < 15 minutes
-      STANDARD_TASK: 1.0, // 15-60 minutes
-      EXTENDED_TASK: 1.3, // 1-3 hours
-      MARATHON_TASK: 1.6, // 3+ hours
-    },
-    QUALITY_MULTIPLIERS: {
-      MINIMAL_EFFORT: 0.7,
-      GOOD_EFFORT: 1.0,
-      EXCEPTIONAL_EFFORT: 1.4,
-      TRANSCENDENT_EFFORT: 2.0,
-    },
-  },
+export interface ImmutableLaws {
+  // Core Stats - Universal human growth dimensions
+  CORE_STATS: readonly string[]
 
-  // Law 2: The Six Sacred Stats (Immutable)
-  CORE_STATS: {
-    SPIRITUAL: {
-      name: "spiritual",
-      description: "Connection to purpose, meaning, and transcendence",
-      maxValue: 100,
-      decayRate: 0.1, // per day without activity
-    },
-    HEALTH: {
-      name: "health",
-      description: "Physical wellness, energy, and vitality",
-      maxValue: 100,
-      decayRate: 0.2,
-    },
-    INTELLIGENCE: {
-      name: "intelligence",
-      description: "Learning, reasoning, and knowledge acquisition",
-      maxValue: 100,
-      decayRate: 0.05,
-    },
-    PHYSICAL: {
-      name: "physical",
-      description: "Strength, endurance, and bodily mastery",
-      maxValue: 100,
-      decayRate: 0.3,
-    },
-    CREATIVITY: {
-      name: "creativity",
-      description: "Innovation, expression, and artistic vision",
-      maxValue: 100,
-      decayRate: 0.15,
-    },
-    RESILIENCE: {
-      name: "resilience",
-      description: "Mental fortitude, adaptability, and recovery",
-      maxValue: 100,
-      decayRate: 0.08,
-    },
-  },
+  // XP and Difficulty Ratios
+  XP_RATIOS: {
+    readonly EASY_TASK_MULTIPLIER: number
+    readonly MEDIUM_TASK_MULTIPLIER: number
+    readonly HARD_TASK_MULTIPLIER: number
+    readonly EXTREME_TASK_MULTIPLIER: number
+    readonly MIN_XP_REWARD: number
+    readonly MAX_XP_REWARD: number
+  }
 
-  // Law 3: Challenge-Growth Relationship
-  CHALLENGE_REQUIREMENTS: {
-    MINIMUM_DIFFICULTY_FOR_GROWTH: 2,
-    COMFORT_ZONE_XP_PENALTY: 0.5, // 50% XP for tasks below user's level
-    GROWTH_ZONE_XP_BONUS: 1.2, // 20% bonus for appropriate challenge
-    STRETCH_ZONE_XP_BONUS: 1.5, // 50% bonus for pushing limits
-  },
+  // Streak and Consistency
+  STREAK_BONUSES: {
+    readonly DAILY_MULTIPLIER: number
+    readonly WEEKLY_MULTIPLIER: number
+    readonly MONTHLY_MULTIPLIER: number
+    readonly MAX_STREAK_BONUS: number
+  }
 
-  // Law 4: Consistency Compounds
-  STREAK_SYSTEM: {
-    DAILY_STREAK_BONUS: {
-      7: 1.1, // 10% bonus at 1 week
-      14: 1.2, // 20% bonus at 2 weeks
-      30: 1.3, // 30% bonus at 1 month
-      60: 1.4, // 40% bonus at 2 months
-      100: 1.5, // 50% bonus at 100 days
-      365: 2.0, // 100% bonus at 1 year
-    },
-    STREAK_PROTECTION: {
-      GRACE_PERIOD_HOURS: 6, // Can complete "yesterday's" task within 6 hours
-      WEEKLY_SKIP_ALLOWANCE: 1, // One skip per week without breaking streak
-    },
-  },
+  // Growth Principles
+  GROWTH_PRINCIPLES: {
+    readonly NO_XP_REMOVAL: boolean
+    readonly EFFORT_TRANSPARENCY: boolean
+    readonly PATH_INTERCONNECTION: boolean
+    readonly USER_AGENCY: boolean
+    readonly POSITIVE_SUM_GROWTH: boolean
+  }
+}
 
-  // Law 5: Effort Transparency
-  XP_EXPLANATION: {
-    ALWAYS_SHOW_BREAKDOWN: true,
-    REQUIRED_COMPONENTS: [
-      "base_xp",
-      "difficulty_multiplier",
-      "time_multiplier",
-      "quality_bonus",
-      "streak_bonus",
-      "total_xp",
-    ],
-  },
+export const IMMUTABLE_LAWS: ImmutableLaws = {
+  CORE_STATS: ["Physical", "Mental", "Emotional", "Social", "Creative", "Spiritual"] as const,
 
-  // Law 6: No Punishment Economy
-  PROTECTION_RULES: {
+  XP_RATIOS: {
+    EASY_TASK_MULTIPLIER: 1.0,
+    MEDIUM_TASK_MULTIPLIER: 2.5,
+    HARD_TASK_MULTIPLIER: 5.0,
+    EXTREME_TASK_MULTIPLIER: 10.0,
+    MIN_XP_REWARD: 10,
+    MAX_XP_REWARD: 1000,
+  } as const,
+
+  STREAK_BONUSES: {
+    DAILY_MULTIPLIER: 1.1,
+    WEEKLY_MULTIPLIER: 1.25,
+    MONTHLY_MULTIPLIER: 1.5,
+    MAX_STREAK_BONUS: 3.0,
+  } as const,
+
+  GROWTH_PRINCIPLES: {
     NO_XP_REMOVAL: true,
-    NO_STAT_REMOVAL: true,
-    NO_RANK_DEMOTION: true,
-    FAILURE_EFFECTS: {
-      PAUSE_PROGRESS: true, // Can pause advancement
-      INCREASE_DIFFICULTY: false, // Cannot make tasks harder as punishment
-      REDUCE_REWARDS: false, // Cannot reduce future rewards
-    },
-  },
-
-  // Law 7: Path Interconnection
-  PATH_REQUIREMENTS: {
-    MINIMUM_STAT_CONTRIBUTION: 1, // Every path must contribute to at least 1 core stat
-    MAXIMUM_PRIMARY_STATS: 3, // No path can be primary for more than 3 stats
-    CROSS_POLLINATION_BONUS: 0.1, // 10% bonus XP when paths complement each other
-  },
-
-  // Law 8: User Agency
-  AGENCY_PRINCIPLES: {
-    SUGGESTION_NOT_COMMAND: true,
-    USER_VETO_POWER: true, // Users can reject any suggested task
-    CUSTOMIZATION_ALLOWED: true, // Users can modify suggested tasks
-    EXPLANATION_REQUIRED: true, // AI must explain reasoning behind suggestions
-  },
-
-  // Law 9: Positive Sum Growth
-  SYNERGY_SYSTEM: {
-    COMPLEMENTARY_BONUSES: {
-      "physical-health": 1.15, // Physical training boosts health
-      "spiritual-resilience": 1.15, // Spiritual practice boosts resilience
-      "intelligence-creativity": 1.15, // Learning boosts creativity
-      "creativity-intelligence": 1.1, // Creativity boosts learning
-      "resilience-physical": 1.1, // Mental toughness helps physical training
-      "health-physical": 1.2, // Good health amplifies physical gains
-    },
-    NO_NEGATIVE_INTERACTIONS: true, // No stat can ever reduce another
-  },
+    EFFORT_TRANSPARENCY: true,
+    PATH_INTERCONNECTION: true,
+    USER_AGENCY: true,
+    POSITIVE_SUM_GROWTH: true,
+  } as const,
 } as const
 
-// Validation functions to ensure laws are never violated
-export class LawEnforcer {
-  static validateXPAward(
-    baseXP: number,
-    difficulty: number,
-    timeSpent: number,
-  ): {
-    isValid: boolean
-    adjustedXP: number
-    explanation: string[]
-  } {
-    const explanation: string[] = []
-    let adjustedXP = baseXP
+/**
+ * Validates XP award against immutable laws
+ */
+export function validateXPAward(
+  baseXP: number,
+  difficulty: "easy" | "medium" | "hard" | "extreme",
+  streakDays = 0,
+): { isValid: boolean; adjustedXP: number; explanation: string } {
+  const { XP_RATIOS, STREAK_BONUSES } = IMMUTABLE_LAWS
 
-    // Law 1: Ensure XP scales with difficulty
-    const expectedMinXP =
-      IMMUTABLE_LAWS.XP_SCALING.BASE_XP_PER_DIFFICULTY[
-        difficulty as keyof typeof IMMUTABLE_LAWS.XP_SCALING.BASE_XP_PER_DIFFICULTY
-      ]
-    if (baseXP < expectedMinXP * 0.8) {
-      adjustedXP = expectedMinXP
-      explanation.push(`XP adjusted to maintain difficulty proportionality (${baseXP} → ${adjustedXP})`)
-    }
+  // Apply difficulty multiplier
+  let adjustedXP = baseXP
+  switch (difficulty) {
+    case "easy":
+      adjustedXP *= XP_RATIOS.EASY_TASK_MULTIPLIER
+      break
+    case "medium":
+      adjustedXP *= XP_RATIOS.MEDIUM_TASK_MULTIPLIER
+      break
+    case "hard":
+      adjustedXP *= XP_RATIOS.HARD_TASK_MULTIPLIER
+      break
+    case "extreme":
+      adjustedXP *= XP_RATIOS.EXTREME_TASK_MULTIPLIER
+      break
+  }
 
-    // Apply time multiplier
-    const timeMultiplier = timeSpent < 15 ? 0.8 : timeSpent > 180 ? 1.6 : 1.0
-    adjustedXP *= timeMultiplier
-    explanation.push(`Time multiplier: ${timeMultiplier}x (${timeSpent} minutes)`)
+  // Apply streak bonus
+  let streakMultiplier = 1.0
+  if (streakDays >= 30) {
+    streakMultiplier = Math.min(STREAK_BONUSES.MONTHLY_MULTIPLIER, STREAK_BONUSES.MAX_STREAK_BONUS)
+  } else if (streakDays >= 7) {
+    streakMultiplier = STREAK_BONUSES.WEEKLY_MULTIPLIER
+  } else if (streakDays >= 1) {
+    streakMultiplier = STREAK_BONUSES.DAILY_MULTIPLIER
+  }
 
+  adjustedXP *= streakMultiplier
+
+  // Enforce min/max bounds
+  adjustedXP = Math.max(XP_RATIOS.MIN_XP_REWARD, Math.min(adjustedXP, XP_RATIOS.MAX_XP_REWARD))
+
+  const explanation = `Base: ${baseXP} × ${difficulty} (${
+    difficulty === "easy"
+      ? XP_RATIOS.EASY_TASK_MULTIPLIER
+      : difficulty === "medium"
+        ? XP_RATIOS.MEDIUM_TASK_MULTIPLIER
+        : difficulty === "hard"
+          ? XP_RATIOS.HARD_TASK_MULTIPLIER
+          : XP_RATIOS.EXTREME_TASK_MULTIPLIER
+  }) × Streak (${streakMultiplier.toFixed(1)}) = ${Math.round(adjustedXP)} XP`
+
+  return {
+    isValid: true,
+    adjustedXP: Math.round(adjustedXP),
+    explanation,
+  }
+}
+
+/**
+ * Validates stat growth against interconnection law
+ */
+export function validateStatGrowth(
+  primaryStat: string,
+  secondaryStats: string[] = [],
+): { isValid: boolean; synergyBonus: number; explanation: string } {
+  const { CORE_STATS } = IMMUTABLE_LAWS
+
+  // Ensure primary stat is valid
+  if (!CORE_STATS.includes(primaryStat)) {
     return {
-      isValid: adjustedXP >= expectedMinXP * 0.8,
-      adjustedXP: Math.round(adjustedXP),
-      explanation,
+      isValid: false,
+      synergyBonus: 0,
+      explanation: `Invalid stat: ${primaryStat}. Must be one of: ${CORE_STATS.join(", ")}`,
     }
   }
 
-  static validateStatChange(
-    currentStats: Record<string, number>,
-    statChanges: Record<string, number>,
-  ): {
-    isValid: boolean
-    adjustedChanges: Record<string, number>
-    violations: string[]
-  } {
-    const violations: string[] = []
-    const adjustedChanges = { ...statChanges }
+  // Calculate synergy bonus for interconnected growth
+  const validSecondaryStats = secondaryStats.filter((stat) => CORE_STATS.includes(stat))
+  const synergyBonus = Math.min(validSecondaryStats.length * 0.1, 0.5) // Max 50% bonus
 
-    // Law 6: No stat removal
-    Object.entries(statChanges).forEach(([stat, change]) => {
-      if (change < 0) {
-        adjustedChanges[stat] = 0
-        violations.push(`Prevented negative stat change for ${stat} (${change} → 0)`)
-      }
-    })
+  const explanation =
+    validSecondaryStats.length > 0
+      ? `Primary: ${primaryStat} + Synergy with ${validSecondaryStats.join(", ")} (+${Math.round(synergyBonus * 100)}%)`
+      : `Primary: ${primaryStat} (no synergy bonus)`
 
-    // Law 2: Respect stat maximums
-    Object.entries(adjustedChanges).forEach(([stat, change]) => {
-      const currentValue = currentStats[stat] || 0
-      const maxValue =
-        IMMUTABLE_LAWS.CORE_STATS[stat.toUpperCase() as keyof typeof IMMUTABLE_LAWS.CORE_STATS]?.maxValue || 100
+  return {
+    isValid: true,
+    synergyBonus,
+    explanation,
+  }
+}
 
-      if (currentValue + change > maxValue) {
-        adjustedChanges[stat] = maxValue - currentValue
-        violations.push(`Capped ${stat} at maximum value (${maxValue})`)
-      }
-    })
-
+/**
+ * Enforces the No Punishment Economy law
+ */
+export function enforceNoPunishment(
+  currentXP: number,
+  proposedChange: number,
+): { isValid: boolean; adjustedChange: number; explanation: string } {
+  if (proposedChange < 0) {
     return {
-      isValid: violations.length === 0,
-      adjustedChanges,
-      violations,
+      isValid: false,
+      adjustedChange: 0,
+      explanation: "The Order protects your earned progress. XP cannot be removed, only paused.",
     }
   }
 
-  static calculateSynergyBonus(statChanges: Record<string, number>): number {
-    let totalBonus = 1.0
-    const changedStats = Object.keys(statChanges).filter((stat) => statChanges[stat] > 0)
+  return {
+    isValid: true,
+    adjustedChange: proposedChange,
+    explanation: "Growth validated - progress preserved.",
+  }
+}
 
-    // Apply synergy bonuses for complementary stats
-    changedStats.forEach((stat1) => {
-      changedStats.forEach((stat2) => {
-        if (stat1 !== stat2) {
-          const synergyKey = `${stat1}-${stat2}`
-          const bonus =
-            IMMUTABLE_LAWS.SYNERGY_SYSTEM.COMPLEMENTARY_BONUSES[
-              synergyKey as keyof typeof IMMUTABLE_LAWS.SYNERGY_SYSTEM.COMPLEMENTARY_BONUSES
-            ]
-          if (bonus) {
-            totalBonus *= bonus
-          }
-        }
-      })
-    })
+/**
+ * Validates user agency in system interactions
+ */
+export function validateUserAgency(
+  action: "suggest" | "require" | "force",
+  context: string,
+): { isValid: boolean; recommendation: string } {
+  if (action === "force") {
+    return {
+      isValid: false,
+      recommendation: `The Order suggests, never commands. Change "${context}" to a suggestion.`,
+    }
+  }
 
-    return Math.min(totalBonus, 2.0) // Cap total synergy bonus at 2x
+  if (action === "require" && !context.includes("safety") && !context.includes("system integrity")) {
+    return {
+      isValid: false,
+      recommendation: `Requirements should be reserved for safety and system integrity. Consider making "${context}" a strong suggestion instead.`,
+    }
+  }
+
+  return {
+    isValid: true,
+    recommendation: "User agency preserved.",
   }
 }

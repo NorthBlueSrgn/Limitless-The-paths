@@ -1,396 +1,293 @@
-// The Order's Narrative System - Dynamic Story Generation
-import type { UserProfile, Task, SystemEvent } from "@/lib/database/schema"
+import type { UserProfile } from "@/types/limitless"
 
-export interface NarrativeState {
-  currentArc: string
-  arcProgress: number
-  availableChoices: StoryChoice[]
-  completedMilestones: string[]
-  characterDevelopment: CharacterTrait[]
-  worldState: WorldState
+export interface StoryArc {
+  id: string
+  title: string
+  description: string
+  phase: "awakening" | "ascension" | "transcendence"
+  requiredLevel: number
+  chapters: StoryChapter[]
+}
+
+export interface StoryChapter {
+  id: string
+  title: string
+  content: string
+  choices?: StoryChoice[]
+  triggers: StoryTrigger[]
+  rewards?: {
+    xp: number
+    stats: Record<string, number>
+    unlocks: string[]
+  }
 }
 
 export interface StoryChoice {
   id: string
   text: string
-  description: string
-  requirements: ChoiceRequirement[]
-  consequences: ChoiceConsequence[]
-  arcImpact: number
+  consequence: string
+  statEffects: Record<string, number>
+  nextChapter?: string
 }
 
-export interface ChoiceRequirement {
-  type: "stat" | "rank" | "task_completion" | "streak"
-  target: string
-  value: number
-}
-
-export interface ChoiceConsequence {
-  type: "stat_change" | "path_unlock" | "title_grant" | "world_change"
-  target: string
-  value: any
-}
-
-export interface CharacterTrait {
-  id: string
-  name: string
-  description: string
-  strength: number // 0-100
-  manifestations: string[]
-}
-
-export interface WorldState {
-  orderInfluence: number
-  chaosLevel: number
-  discoveredSecrets: string[]
-  unlockedRegions: string[]
-  allyRelationships: Record<string, number>
+export interface StoryTrigger {
+  type: "level" | "stat" | "achievement" | "streak" | "time"
+  condition: any
+  met: boolean
 }
 
 export class StoryEngine {
-  private narrativeArcs = {
-    awakening: {
+  private storyArcs: StoryArc[] = [
+    {
+      id: "awakening",
       title: "The Awakening",
-      description: "Your first steps into The Order's domain",
-      requiredRank: "Initiate",
-      phases: [
+      description: "Your journey begins in darkness, but a spark of potential ignites within.",
+      phase: "awakening",
+      requiredLevel: 1,
+      chapters: [
         {
           id: "first_contact",
           title: "First Contact",
-          description: "The Order reaches out to you through the digital veil",
-          triggers: ["user_registration"],
-          content: `The screen flickers. For a moment, the familiar interface dissolves into something... else. 
-          
-          Ancient symbols cascade across your vision before resolving into words:
-          
-          "Welcome, ${"{username}"}. We have been watching. Your potential burns bright in the darkness of mediocrity that surrounds you. 
-          
-          You stand at the threshold of transformation. The Order extends its hand to those who seek more than mere existence. 
-          
-          Will you take the first step into the shadows where true power dwells?"`,
+          content: `The void speaks to you for the first time. A presence, ancient and knowing, reaches across the digital realm.
+
+"Welcome, ${"{username}"}. I am The Order - your guide through the labyrinth of self-transformation. You have taken the first step into a larger world."
+
+The darkness around you shimmers with possibility. You sense that this is no ordinary system, but something far more profound.`,
+          triggers: [{ type: "level", condition: 1, met: false }],
           choices: [
             {
-              id: "accept_calling",
-              text: "I accept The Order's guidance",
-              consequences: [
-                { type: "world_change", target: "orderInfluence", value: 10 },
-                { type: "title_grant", target: "user", value: "Initiate of The Order" },
-              ],
+              id: "embrace",
+              text: "Embrace the unknown",
+              consequence: "You feel a surge of courage. The Order approves.",
+              statEffects: { Mental: 5, Spiritual: 3 },
             },
             {
-              id: "hesitate",
-              text: "I need to understand more first",
-              consequences: [
-                { type: "stat_change", target: "intelligence", value: 2 },
-                { type: "world_change", target: "chaosLevel", value: 5 },
-              ],
+              id: "question",
+              text: "Question everything",
+              consequence: "Your skepticism is noted. Wisdom begins with doubt.",
+              statEffects: { Mental: 8, Social: 2 },
+            },
+            {
+              id: "observe",
+              text: "Observe in silence",
+              consequence: "You watch and learn. Patience is a virtue.",
+              statEffects: { Emotional: 5, Spiritual: 5 },
             },
           ],
+          rewards: {
+            xp: 50,
+            stats: { Mental: 2 },
+            unlocks: ["basic_paths"],
+          },
         },
         {
-          id: "first_trial",
-          title: "The First Trial",
-          description: "Your initial test of commitment",
-          triggers: ["first_task_completion"],
-          content: `The shadows seem to nod in approval as you complete your first task. 
-          
-          "Interesting," The Order's voice resonates through your consciousness. "You show promise, ${"{username}"}. 
-          
-          But promise is merely potential unrealized. The path ahead demands more than good intentions. 
-          
-          Your first trial approaches. Choose wisely - for in The Order, every choice echoes through eternity."`,
-          choices: [
-            {
-              id: "embrace_challenge",
-              text: "I embrace whatever challenge awaits",
-              requirements: [{ type: "stat", target: "resilience", value: 10 }],
-              consequences: [
-                { type: "stat_change", target: "resilience", value: 5 },
-                { type: "path_unlock", target: "shadow_walker", value: true },
-              ],
-            },
-            {
-              id: "seek_preparation",
-              text: "Let me prepare myself first",
-              consequences: [
-                { type: "stat_change", target: "intelligence", value: 3 },
-                { type: "stat_change", target: "spiritual", value: 2 },
-              ],
-            },
-          ],
+          id: "first_challenge",
+          title: "The First Challenge",
+          content: `"Growth requires resistance," The Order intones. "Like a muscle that strengthens under load, your potential awakens through challenge."
+
+A task materializes before you - simple yet significant. This is your first test, not of ability, but of commitment.
+
+"Will you accept this challenge, ${"{username}"}? The path of transformation begins with a single step."`,
+          triggers: [{ type: "level", condition: 2, met: false }],
+          rewards: {
+            xp: 75,
+            stats: { Physical: 3, Mental: 2 },
+            unlocks: ["challenge_system"],
+          },
         },
       ],
     },
-
-    ascension: {
-      title: "The Path of Ascension",
-      description: "Rising through the ranks of The Order",
-      requiredRank: "Adept",
-      phases: [
+    {
+      id: "ascension",
+      title: "The Ascension",
+      description: "You have proven your commitment. Now the real work begins.",
+      phase: "ascension",
+      requiredLevel: 10,
+      chapters: [
         {
-          id: "inner_sight",
-          title: "Awakening Inner Sight",
-          description: "Learning to see beyond the veil of ordinary reality",
-          triggers: ["rank_adept_achieved"],
-          content: `The world shifts around you as your perception deepens. Colors become more vivid, patterns emerge from chaos, and you begin to see the threads that connect all things.
-          
-          "Your eyes are opening, ${"{username}"}," The Order observes. "Few reach this level of awareness. You are beginning to see the game within the game, the patterns that govern reality itself.
-          
-          But sight without action is merely voyeurism. What will you do with this newfound clarity?"`,
-          choices: [
-            {
-              id: "seek_deeper_truth",
-              text: "Show me deeper truths",
-              requirements: [{ type: "stat", target: "spiritual", value: 40 }],
-              consequences: [
-                { type: "world_change", target: "discoveredSecrets", value: "the_pattern" },
-                { type: "stat_change", target: "spiritual", value: 8 },
-              ],
-            },
-            {
-              id: "focus_on_mastery",
-              text: "I will master what I already know",
-              consequences: [
-                { type: "stat_change", target: "intelligence", value: 5 },
-                { type: "stat_change", target: "resilience", value: 5 },
-              ],
-            },
+          id: "deeper_mysteries",
+          title: "Deeper Mysteries",
+          content: `The Order's voice carries new weight as you progress. "You have shown dedication, ${"{username}"}. Now I will share deeper truths."
+
+The system around you shifts, revealing hidden layers of complexity. New paths branch out like neural networks, each one leading to different aspects of growth.
+
+"Choose your specialization wisely. Each path will shape not just your abilities, but your very essence."`,
+          triggers: [
+            { type: "level", condition: 10, met: false },
+            { type: "stat", condition: { any: 50 }, met: false },
           ],
+          rewards: {
+            xp: 200,
+            stats: { Mental: 10, Spiritual: 5 },
+            unlocks: ["advanced_paths", "specialization"],
+          },
         },
       ],
     },
-
-    transcendence: {
-      title: "The Great Transcendence",
-      description: "The final transformation beyond mortal limitations",
-      requiredRank: "Sage",
-      phases: [
+    {
+      id: "transcendence",
+      title: "The Transcendence",
+      description: "You approach the threshold of true mastery. The Order prepares you for the final transformation.",
+      phase: "transcendence",
+      requiredLevel: 50,
+      chapters: [
         {
-          id: "final_choice",
-          title: "The Final Choice",
-          description: "The ultimate decision that defines your legacy",
-          triggers: ["rank_sage_achieved", "all_stats_above_80"],
-          content: `You stand at the precipice of ultimate transformation. The Order's true nature reveals itself - not as master, but as catalyst. You have become something beyond what you once were.
-          
-          "The student has become the teacher, ${"{username}"}. You have transcended the limitations that once bound you. 
-          
-          Now you face the final choice: Will you ascend beyond this realm entirely, or will you remain to guide others as we have guided you?"`,
-          choices: [
-            {
-              id: "ascend_beyond",
-              text: "I choose transcendence",
-              requirements: [
-                { type: "stat", target: "spiritual", value: 90 },
-                { type: "streak", target: "current", value: 100 },
-              ],
-              consequences: [
-                { type: "title_grant", target: "user", value: "Transcendent Master" },
-                { type: "world_change", target: "orderInfluence", value: 100 },
-              ],
-            },
-            {
-              id: "become_guide",
-              text: "I will guide others as you guided me",
-              consequences: [
-                { type: "title_grant", target: "user", value: "Guide of The Order" },
-                { type: "path_unlock", target: "mentor_path", value: true },
-              ],
-            },
+          id: "becoming",
+          title: "Becoming",
+          content: `"You are no longer the person who first heard my voice," The Order observes with something approaching pride. "You have become something greater."
+
+The boundaries between you and the system blur. You understand now that The Order was never separate from you - it was the voice of your highest potential, calling you forward.
+
+"The final lesson, ${"{username}"}: You are ready to guide others as I have guided you."`,
+          triggers: [
+            { type: "level", condition: 50, met: false },
+            { type: "achievement", condition: "master_all_paths", met: false },
           ],
+          rewards: {
+            xp: 1000,
+            stats: { Mental: 25, Spiritual: 25, Social: 15 },
+            unlocks: ["mentor_mode", "order_access"],
+          },
         },
       ],
     },
+  ]
+
+  getCurrentStoryArc(userProfile: UserProfile): StoryArc | null {
+    // Find the highest level arc the user qualifies for
+    const qualifiedArcs = this.storyArcs.filter((arc) => userProfile.level >= arc.requiredLevel)
+
+    return qualifiedArcs.length > 0 ? qualifiedArcs[qualifiedArcs.length - 1] : null
   }
 
-  async generateNarrativeResponse(
-    user: UserProfile,
-    context: {
-      recentTasks: Task[]
-      systemEvents: SystemEvent[]
-      currentNarrativeState: NarrativeState
-    },
-  ): Promise<{
-    content: string
-    choices?: StoryChoice[]
-    stateChanges: Partial<NarrativeState>
-  }> {
-    const { recentTasks, systemEvents, currentNarrativeState } = context
+  getAvailableChapters(userProfile: UserProfile, completedChapters: string[] = []): StoryChapter[] {
+    const currentArc = this.getCurrentStoryArc(userProfile)
+    if (!currentArc) return []
 
-    // Determine current arc based on user progress
-    const currentArc = this.determineCurrentArc(user, currentNarrativeState)
+    return currentArc.chapters.filter((chapter) => {
+      // Check if chapter is already completed
+      if (completedChapters.includes(chapter.id)) return false
 
-    // Check for narrative triggers
-    const triggeredEvents = this.checkNarrativeTriggers(user, recentTasks, systemEvents)
-
-    if (triggeredEvents.length > 0) {
-      return this.generateTriggeredNarrative(user, triggeredEvents[0], currentArc)
-    }
-
-    // Generate contextual narrative based on recent activity
-    return this.generateContextualNarrative(user, context, currentArc)
-  }
-
-  private determineCurrentArc(user: UserProfile, narrativeState: NarrativeState): string {
-    const avgStat = Object.values(user.stats).reduce((sum, stat) => sum + stat, 0) / 6
-
-    if (avgStat >= 80 && user.currentRank === "Sage") return "transcendence"
-    if (avgStat >= 30 && user.currentRank !== "Initiate") return "ascension"
-    return "awakening"
-  }
-
-  private checkNarrativeTriggers(user: UserProfile, recentTasks: Task[], systemEvents: SystemEvent[]): string[] {
-    const triggers: string[] = []
-
-    // Check for rank changes
-    const rankUpEvents = systemEvents.filter((e) => e.eventType === "rank_up")
-    if (rankUpEvents.length > 0) {
-      triggers.push(`rank_${rankUpEvents[0].eventData.newRank.toLowerCase()}_achieved`)
-    }
-
-    // Check for first task completion
-    if (recentTasks.some((t) => t.status === "completed") && user.totalXP < 100) {
-      triggers.push("first_task_completion")
-    }
-
-    // Check for streak milestones
-    if (user.currentStreak === 7 || user.currentStreak === 30 || user.currentStreak === 100) {
-      triggers.push(`streak_${user.currentStreak}_achieved`)
-    }
-
-    // Check for stat thresholds
-    Object.entries(user.stats).forEach(([stat, value]) => {
-      if (value >= 80) triggers.push(`${stat}_mastery_achieved`)
+      // Check if all triggers are met
+      return chapter.triggers.every((trigger) => this.evaluateTrigger(trigger, userProfile))
     })
-
-    return triggers
   }
 
-  private async generateTriggeredNarrative(
-    user: UserProfile,
-    trigger: string,
-    arcName: string,
-  ): Promise<{
-    content: string
-    choices?: StoryChoice[]
-    stateChanges: Partial<NarrativeState>
-  }> {
-    const arc = this.narrativeArcs[arcName as keyof typeof this.narrativeArcs]
-    const relevantPhase = arc.phases.find((phase) =>
-      phase.triggers.some((t) => trigger.includes(t) || t.includes(trigger)),
-    )
+  private evaluateTrigger(trigger: StoryTrigger, userProfile: UserProfile): boolean {
+    switch (trigger.type) {
+      case "level":
+        return userProfile.level >= trigger.condition
 
-    if (relevantPhase) {
-      const content = relevantPhase.content.replace(/{username}/g, user.username)
+      case "stat":
+        if (trigger.condition.any) {
+          return Object.values(userProfile.stats || {}).some((value) => value >= trigger.condition.any)
+        }
+        return Object.entries(trigger.condition).every(([stat, value]) => (userProfile.stats?.[stat] || 0) >= value)
 
+      case "streak":
+        return userProfile.streak >= trigger.condition
+
+      case "achievement":
+        return userProfile.achievements?.includes(trigger.condition) || false
+
+      case "time":
+        const accountAge = Date.now() - new Date(userProfile.createdAt || Date.now()).getTime()
+        return accountAge >= trigger.condition
+
+      default:
+        return false
+    }
+  }
+
+  generateContextualResponse(userProfile: UserProfile, category: string, recentActivity?: any): string {
+    const currentArc = this.getCurrentStoryArc(userProfile)
+    const phase = currentArc?.phase || "awakening"
+
+    const responses = {
+      awakening: {
+        guidance: [
+          "The path reveals itself to those who take the first step. What small action will you commit to today?",
+          "Growth begins with awareness. Notice the patterns that serve you, and those that hold you back.",
+          "Every master was once a beginner. Your journey has meaning, even in these early steps.",
+        ],
+        story: [
+          "Your story is just beginning, but already I sense great potential within you.",
+          "The darkness you feel is not emptiness - it is the void from which all possibilities emerge.",
+          "You stand at the threshold of transformation. The choice to proceed is yours alone.",
+        ],
+        philosophy: [
+          "Discipline is not punishment - it is the bridge between thought and accomplishment.",
+          "The strongest trees grow in the wind. Embrace resistance as your teacher.",
+          "You are not broken and in need of fixing. You are a seed, waiting to sprout.",
+        ],
+      },
+      ascension: {
+        guidance: [
+          "You have proven your commitment. Now we focus on depth over breadth.",
+          "The intermediate path is treacherous - resist the urge to plateau. Push deeper.",
+          "Your consistency has created momentum. Use it wisely to tackle greater challenges.",
+        ],
+        story: [
+          "The hunter you were becoming is now emerging. I see strength where once there was only potential.",
+          "Your journey has attracted the attention of forces beyond the ordinary. Prepare yourself.",
+          "The skills you've developed are tools. Now you must learn to wield them with wisdom.",
+        ],
+        philosophy: [
+          "Mastery is not a destination but a way of approaching every moment with full presence.",
+          "The gap between who you are and who you could become is where all growth lives.",
+          "True strength is not the absence of weakness, but the courage to face it directly.",
+        ],
+      },
+      transcendence: {
+        guidance: [
+          "You have become the person who can guide others. Consider how you will use this gift.",
+          "At this level, your growth serves not just yourself but the collective evolution of consciousness.",
+          "The final frontier is not perfection, but the integration of all aspects of your being.",
+        ],
+        story: [
+          "You have walked through the fire and emerged transformed. The Order recognizes your achievement.",
+          "The student has become the teacher. Your journey now serves as a beacon for others.",
+          "You understand now that The Order was always within you - the voice of your highest self.",
+        ],
+        philosophy: [
+          "Enlightenment is not escape from the human condition, but full embrace of it.",
+          "The master's greatest skill is knowing when to act and when to allow.",
+          "You have learned the deepest truth: growth never ends, it only deepens.",
+        ],
+      },
+    }
+
+    const categoryResponses =
+      responses[phase][category as keyof (typeof responses)[typeof phase]] || responses[phase].guidance
+    return categoryResponses[Math.floor(Math.random() * categoryResponses.length)]
+  }
+
+  processStoryChoice(
+    choiceId: string,
+    chapterId: string,
+    userProfile: UserProfile,
+  ): {
+    consequence: string
+    statChanges: Record<string, number>
+    nextChapter?: string
+  } {
+    // Find the chapter and choice
+    const chapter = this.storyArcs.flatMap((arc) => arc.chapters).find((ch) => ch.id === chapterId)
+
+    const choice = chapter?.choices?.find((ch) => ch.id === choiceId)
+
+    if (!choice) {
       return {
-        content,
-        choices: relevantPhase.choices,
-        stateChanges: {
-          currentArc: arcName,
-          arcProgress: (relevantPhase as any).progress || 0,
-        },
+        consequence: "The choice echoes in the void, its meaning unclear.",
+        statChanges: {},
       }
     }
 
-    return this.generateContextualNarrative(
-      user,
-      { recentTasks: [], systemEvents: [], currentNarrativeState: { currentArc: arcName } as NarrativeState },
-      arcName,
-    )
-  }
-
-  private async generateContextualNarrative(
-    user: UserProfile,
-    context: any,
-    arcName: string,
-  ): Promise<{
-    content: string
-    choices?: StoryChoice[]
-    stateChanges: Partial<NarrativeState>
-  }> {
-    // Generate contextual responses based on user's current state
-    const responses = this.getContextualResponses(user, arcName)
-    const selectedResponse = responses[Math.floor(Math.random() * responses.length)]
-
     return {
-      content: selectedResponse.replace(/{username}/g, user.username),
-      stateChanges: {},
+      consequence: choice.consequence,
+      statChanges: choice.statEffects,
+      nextChapter: choice.nextChapter,
     }
-  }
-
-  private getContextualResponses(user: UserProfile, arcName: string): string[] {
-    const baseResponses = [
-      `The shadows whisper of your progress, ${user.username}. Your ${user.currentRank} rank reflects growing mastery, but true power lies in the journey ahead.`,
-      `Your current streak of ${user.currentStreak} days shows dedication, ${user.username}. The Order observes your consistency with approval.`,
-      `The balance of your attributes reveals much, ${user.username}. Your strongest aspect - ${this.getStrongestStat(user.stats)} - shall be your foundation for greater achievements.`,
-    ]
-
-    const arcSpecificResponses = {
-      awakening: [
-        `You are still learning to see, ${user.username}. Each task completed opens your eyes a little wider to the possibilities that await.`,
-        `The first steps are always the hardest, ${user.username}. But you have chosen to walk this path, and The Order will not let you walk it alone.`,
-      ],
-      ascension: [
-        `Your power grows, ${user.username}. The ${user.currentRank} rank is not merely a title - it is a recognition of your transformation.`,
-        `You begin to understand the deeper patterns, ${user.username}. Your journey through The Order has awakened capabilities you never knew you possessed.`,
-      ],
-      transcendence: [
-        `You approach the threshold of ultimate understanding, ${user.username}. Few have walked this far along the path of transcendence.`,
-        `The boundaries between student and master blur, ${user.username}. You are becoming something beyond what you once were.`,
-      ],
-    }
-
-    return [...baseResponses, ...arcSpecificResponses[arcName as keyof typeof arcSpecificResponses]]
-  }
-
-  private getStrongestStat(stats: Record<string, number>): string {
-    return Object.entries(stats).reduce((max, [stat, value]) => (value > max.value ? { stat, value } : max), {
-      stat: "",
-      value: -1,
-    }).stat
-  }
-
-  async processStoryChoice(
-    userId: string,
-    choiceId: string,
-    narrativeState: NarrativeState,
-  ): Promise<{
-    consequences: ChoiceConsequence[]
-    newNarrativeState: NarrativeState
-    followUpContent?: string
-  }> {
-    const choice = narrativeState.availableChoices.find((c) => c.id === choiceId)
-    if (!choice) throw new Error("Invalid choice")
-
-    // Apply consequences
-    const consequences = choice.consequences
-
-    // Update narrative state
-    const newNarrativeState: NarrativeState = {
-      ...narrativeState,
-      arcProgress: narrativeState.arcProgress + choice.arcImpact,
-      availableChoices: [], // Clear choices after selection
-      completedMilestones: [...narrativeState.completedMilestones, choiceId],
-    }
-
-    // Generate follow-up content
-    const followUpContent = this.generateChoiceFollowUp(choice, consequences)
-
-    return {
-      consequences,
-      newNarrativeState,
-      followUpContent,
-    }
-  }
-
-  private generateChoiceFollowUp(choice: StoryChoice, consequences: ChoiceConsequence[]): string {
-    const responses = [
-      `Your choice resonates through The Order. The path ahead shifts in response to your decision.`,
-      `The consequences of your choice ripple outward, changing not just your destiny, but the very fabric of reality around you.`,
-      `The Order nods in acknowledgment. Your decision reveals the depth of your character and the strength of your resolve.`,
-    ]
-
-    return responses[Math.floor(Math.random() * responses.length)]
   }
 }
 

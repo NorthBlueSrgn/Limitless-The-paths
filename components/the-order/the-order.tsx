@@ -99,7 +99,14 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
         body: JSON.stringify({
           message: inputMessage,
           category: selectedCategory,
-          userProfile,
+          userProfile: {
+            username: userProfile.username || "Hunter",
+            level: userProfile.level || 1,
+            rank: userProfile.rank || "Novice",
+            title: userProfile.title || "Seeker",
+            totalXP: userProfile.totalXP || 0,
+            streak: userProfile.streak || 0,
+          },
           userProgress: {
             activePaths: userProgress?.activePaths || [],
             completedTasks: userProgress?.completedTasks || 0,
@@ -107,12 +114,12 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`)
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
 
+      const data = await response.json()
       const aiReply = data.reply || "The Order remains silent in contemplation..."
 
       const aiMessage: AIMessage = {
@@ -129,6 +136,9 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
       setTimeout(() => {
         addMessage(aiReply, selectedCategory)
       }, 100)
+
+      // Clear any previous connection errors on successful response
+      setConnectionError(null)
     } catch (error) {
       console.error("Failed to fetch AI response:", error)
       setConnectionError(error instanceof Error ? error.message : "Unknown error occurred")

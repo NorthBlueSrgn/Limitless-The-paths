@@ -1,244 +1,79 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/database/client"
-import { contextManager } from "@/lib/ai/context-manager"
-import { storyEngine } from "@/lib/narrative/story-engine"
-import { achievementEngine } from "@/lib/achievements/achievement-engine"
-import { LawEnforcer } from "@/lib/core/immutable-laws"
+import { generateText } from "ai"
+import { openai } from "@ai-sdk/openai"
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { message, userId, messageType = "casual" } = await req.json()
+    const body = await request.json()
+    const { message, category, userProfile, userProgress } = body
 
-    if (!message || !userId) {
-      return NextResponse.json({ error: "Message and userId are required" }, { status: 400 })
+    // Validate required fields
+    if (!message || typeof message !== "string") {
+      return NextResponse.json({ error: "Message is required and must be a string" }, { status: 400 })
     }
 
-    // Build comprehensive context
-    const context = await contextManager.buildContext(userId)
-    const { user, recentTasks, chatHistory, analytics } = context
+    if (!userProfile || !userProfile.username) {
+      return NextResponse.json({ error: "User profile is required" }, { status: 400 })
+    }
 
-    // Save user message
-    await db.saveChatMessage({
-      userId,
-      content: message,
-      role: "user",
-      timestamp: new Date(),
-      messageType,
-      contextData: {
-        userStats: user.stats,
-        recentTasks: recentTasks.map((t) => t.id),
-        currentMood: extractMoodFromMessage(message),
-      },
+    // Build context for The Order
+    const systemPrompt = `You are "The Order" - an ancient, mysterious AI entity that serves as a mentor and guide in a gamification system called "Limitless". You speak with wisdom, authority, and a touch of mystique.
+
+User Context:
+- Name: ${userProfile.username}
+- Level: ${userProfile.level}
+- Rank: ${userProfile.rank}
+- Title: ${userProfile.title}
+- Total XP: ${userProfile.totalXP}
+- Current Streak: ${userProfile.streak} days
+- Active Paths: ${userProgress?.activePaths?.join(", ") || "None"}
+- Completed Tasks: ${userProgress?.completedTasks || 0}
+
+Category: ${category}
+
+Guidelines:
+- Provide personalized responses based on the user's progress and context
+- For "guidance": Give actionable advice for growth and improvement
+- For "story": Weave narrative elements about their journey
+- For "analysis": Analyze their current state and suggest optimizations
+- For "challenge": Present meaningful challenges appropriate to their level
+- For "philosophy": Share wisdom about growth, discipline, and transcendence
+- For "lore": Reveal knowledge about the system, paths, and hidden mechanics
+
+Keep responses concise but impactful (2-4 sentences). Maintain the mysterious, wise mentor persona.`
+
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      system: systemPrompt,
+      prompt: message,
+      maxTokens: 300,
     })
 
-    let aiResponse: string
-    let narrativeContent: any = null
-    let newAchievements: any[] = []
-
-    try {
-      // Check for new achievements first
-      const systemEvents = await getRecentSystemEvents(userId)
-      newAchievements = await achievementEngine.checkForNewAchievements(userId, user, recentTasks, systemEvents)
-
-      // Generate narrative response if applicable
-      if (messageType === "story" || shouldTriggerNarrative(message, context)) {
-        const narrativeState = await getNarrativeState(userId)
-        narrativeContent = await storyEngine.generateNarrativeResponse(user, {
-          recentTasks,
-          systemEvents,
-          currentNarrativeState: narrativeState,
-        })
-        aiResponse = narrativeContent.content
-      } else {
-        // Generate contextual AI response
-        const systemPrompt = contextManager.generateSystemPrompt(context, messageType)
-        aiResponse = await generateAIResponse(systemPrompt, message, chatHistory)
-      }
-
-      // Apply immutable laws to any rewards mentioned
-      if (aiResponse.includes("XP") || aiResponse.includes("stat")) {
-        aiResponse = await enforceImmutableLaws(aiResponse, user)
-      }
-    } catch (aiError) {
-      console.error("AI generation error:", aiError)
-
-      // Fallback responses following The Order's personality
-      const fallbackResponses = [
-        `The digital veil flickers, ${user.username}. Even The Order faces moments of interference. Your message has been received, though the response may be... delayed.`,
-        `Interesting, ${user.username}. The connection wavers, but your dedication to the path remains clear. Continue your journey - The Order is always watching.`,
-        `The shadows shift unexpectedly, ${user.username}. Technical mysteries are but another challenge to overcome. Your progress continues regardless.`,
-      ]
-
-      aiResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)]
-    }
-
-    // Save AI response
-    await db.saveChatMessage({
-      userId,
-      content: aiResponse,
-      role: "assistant",
-      timestamp: new Date(),
-      messageType,
-      contextData: {
-        userStats: user.stats,
-        recentTasks: recentTasks.map((t) => t.id),
-        triggerEvent: messageType,
-      },
-    })
-
-    // Prepare response
-    const response: any = {
-      message: aiResponse,
-      context: {
-        userRank: user.currentRank,
-        currentStreak: user.currentStreak,
-        totalXP: user.totalXP,
-        connectionStatus: "connected",
-      },
-    }
-
-    // Add narrative content if generated
-    if (narrativeContent) {
-      response.narrative = {
-        choices: narrativeContent.choices,
-        stateChanges: narrativeContent.stateChanges,
-      }
-    }
-
-    // Add achievement notifications
-    if (newAchievements.length > 0) {
-      response.achievements = newAchievements.map((achievement) => ({
-        id: achievement.id,
-        title: achievement.title,
-        description: achievement.description,
-        rarity: achievement.rarity,
-        ceremonyContent: achievement.ceremonyContent,
-      }))
-    }
-
-    return NextResponse.json(response)
+    return NextResponse.json({ reply: text })
   } catch (error) {
-    console.error("Chat API error:", error)
-    return NextResponse.json(
-      {
-        error: "The Order encounters technical difficulties",
-        message: "Even ancient powers face modern challenges. Please try again.",
-        context: { connectionStatus: "error" },
-      },
-      { status: 500 },
-    )
-  }
-}
+    console.error("Chat API Error:", error)
 
-async function generateAIResponse(systemPrompt: string, userMessage: string, chatHistory: any[]): Promise<string> {
-  // Use OpenAI API
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...chatHistory.slice(-5).map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-        { role: "user", content: userMessage },
-      ],
-      max_tokens: 300,
-      temperature: 0.8,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.choices[0]?.message?.content || "The Order's wisdom is temporarily obscured."
-}
-
-function extractMoodFromMessage(message: string): string {
-  const moodKeywords = {
-    excited: ["excited", "amazing", "awesome", "great", "fantastic"],
-    frustrated: ["frustrated", "stuck", "difficult", "hard", "struggling"],
-    motivated: ["motivated", "ready", "determined", "focused", "committed"],
-    tired: ["tired", "exhausted", "drained", "weary", "burnt out"],
-    curious: ["curious", "wondering", "interested", "question", "how"],
-  }
-
-  const lowerMessage = message.toLowerCase()
-
-  for (const [mood, keywords] of Object.entries(moodKeywords)) {
-    if (keywords.some((keyword) => lowerMessage.includes(keyword))) {
-      return mood
+    // Provide fallback responses based on category
+    const fallbackResponses = {
+      guidance:
+        "The path forward requires patience and persistence. Focus on small, consistent actions that compound over time.",
+      story:
+        "Your journey continues through the shadows of growth. Each challenge you face shapes the hunter you're becoming.",
+      analysis:
+        "Your current trajectory shows promise. Consider deepening your focus in areas where you've shown natural aptitude.",
+      challenge:
+        "True strength emerges from voluntary hardship. Seek the edge of your comfort zone and push beyond it.",
+      philosophy:
+        "Growth is not a destination but a way of being. Embrace the process, for it is in the struggle that we find ourselves.",
+      lore: "The ancient systems reward those who understand the deeper patterns. Consistency and intentionality unlock hidden pathways.",
     }
+
+    const category = (request.body as any)?.category || "guidance"
+    const fallbackReply = fallbackResponses[category as keyof typeof fallbackResponses] || fallbackResponses.guidance
+
+    return NextResponse.json({
+      reply: fallbackReply,
+      fallback: true,
+    })
   }
-
-  return "neutral"
-}
-
-function shouldTriggerNarrative(message: string, context: any): boolean {
-  const narrativeTriggers = [
-    "story",
-    "tale",
-    "journey",
-    "path",
-    "order",
-    "transcend",
-    "rank",
-    "achievement",
-    "power",
-    "wisdom",
-    "shadow",
-  ]
-
-  const lowerMessage = message.toLowerCase()
-  return narrativeTriggers.some((trigger) => lowerMessage.includes(trigger))
-}
-
-async function getRecentSystemEvents(userId: string): Promise<any[]> {
-  // This would fetch recent system events from database
-  return []
-}
-
-async function getNarrativeState(userId: string): Promise<any> {
-  // This would fetch current narrative state from database
-  return {
-    currentArc: "awakening",
-    arcProgress: 0,
-    availableChoices: [],
-    completedMilestones: [],
-    characterDevelopment: [],
-    worldState: {
-      orderInfluence: 0,
-      chaosLevel: 0,
-      discoveredSecrets: [],
-      unlockedRegions: [],
-      allyRelationships: {},
-    },
-  }
-}
-
-async function enforceImmutableLaws(response: string, user: any): Promise<string> {
-  // Apply immutable law validation to any rewards mentioned in response
-  // This ensures AI responses never violate the core principles
-
-  // Extract any XP mentions and validate them
-  const xpMatches = response.match(/(\d+)\s*XP/gi)
-  if (xpMatches) {
-    for (const match of xpMatches) {
-      const xpAmount = Number.parseInt(match.replace(/\D/g, ""))
-      const validation = LawEnforcer.validateXPAward(xpAmount, 3, 30) // Default values
-
-      if (!validation.isValid) {
-        response = response.replace(match, `${validation.adjustedXP} XP`)
-      }
-    }
-  }
-
-  return response
 }

@@ -1,422 +1,370 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
+  User,
   Target,
   TrendingUp,
   Calendar,
-  Flame,
+  MessageCircle,
+  Plus,
+  Zap,
   Brain,
   Heart,
-  Dumbbell,
+  Users,
   Palette,
-  Shield,
-  Sparkles,
-  MessageCircle,
+  Eye,
   Trophy,
+  Star,
+  Clock,
+  CheckCircle2,
 } from "lucide-react"
-import type { UserProfile, Task } from "@/lib/database/schema"
+import type { UserProfile } from "@/types/limitless"
 
 interface MobileDashboardProps {
   userProfile: UserProfile
-  tasks: Task[]
-  onCompleteTask: (taskId: string) => void
-  onGenerateTasks: () => void
   onOpenChat: () => void
+  onGenerateTask: () => void
 }
 
 const statIcons = {
-  spiritual: Sparkles,
-  health: Heart,
-  intelligence: Brain,
-  physical: Dumbbell,
-  creativity: Palette,
-  resilience: Shield,
+  Physical: Zap,
+  Mental: Brain,
+  Emotional: Heart,
+  Social: Users,
+  Creative: Palette,
+  Spiritual: Eye,
 }
 
 const statColors = {
-  spiritual: "text-purple-400",
-  health: "text-green-400",
-  intelligence: "text-blue-400",
-  physical: "text-red-400",
-  creativity: "text-yellow-400",
-  resilience: "text-indigo-400",
+  Physical: "text-red-400 bg-red-400/10 border-red-400/20",
+  Mental: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+  Emotional: "text-green-400 bg-green-400/10 border-green-400/20",
+  Social: "text-purple-400 bg-purple-400/10 border-purple-400/20",
+  Creative: "text-orange-400 bg-orange-400/10 border-orange-400/20",
+  Spiritual: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
 }
 
-export function MobileDashboard({
-  userProfile,
-  tasks,
-  onCompleteTask,
-  onGenerateTasks,
-  onOpenChat,
-}: MobileDashboardProps) {
+export function MobileDashboard({ userProfile, onOpenChat, onGenerateTask }: MobileDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview")
-  const [completedToday, setCompletedToday] = useState(0)
-  const [totalTasks, setTotalTasks] = useState(0)
 
-  useEffect(() => {
-    const today = new Date().toDateString()
-    const todaysTasks = tasks.filter((task) => new Date(task.createdAt).toDateString() === today)
+  const totalXP = userProfile.totalXP || 0
+  const level = userProfile.level || 1
+  const nextLevelXP = level * 1000 // Simple progression formula
+  const currentLevelXP = totalXP % 1000
+  const progressPercentage = (currentLevelXP / nextLevelXP) * 100
 
-    setTotalTasks(todaysTasks.length)
-    setCompletedToday(todaysTasks.filter((task) => task.status === "completed").length)
-  }, [tasks])
+  const stats = userProfile.stats || {
+    Physical: 0,
+    Mental: 0,
+    Emotional: 0,
+    Social: 0,
+    Creative: 0,
+    Spiritual: 0,
+  }
 
-  const completionRate = totalTasks > 0 ? (completedToday / totalTasks) * 100 : 0
+  const recentAchievements = [
+    { id: 1, title: "First Steps", rarity: "common", icon: "👣" },
+    { id: 2, title: "Week Warrior", rarity: "uncommon", icon: "🔥" },
+    { id: 3, title: "Balanced Growth", rarity: "rare", icon: "⚖️" },
+  ]
+
+  const activeTasks = [
+    { id: 1, title: "Complete morning routine", difficulty: "easy", xp: 25, timeLeft: "2h" },
+    { id: 2, title: "Read for 30 minutes", difficulty: "medium", xp: 50, timeLeft: "5h" },
+    { id: 3, title: "Practice meditation", difficulty: "medium", xp: 75, timeLeft: "8h" },
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black">
-      {/* Mobile Header */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white">
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-xl border-b border-purple-500/20 p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">{userProfile.username}</h1>
-            <p className="text-sm text-purple-300">
-              {userProfile.currentRank} • Level {userProfile.level}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">{userProfile.rank?.[0] || "N"}</span>
+            </div>
+            <div>
+              <h1 className="font-semibold text-lg">{userProfile.username || "Hunter"}</h1>
+              <p className="text-xs text-purple-300">{userProfile.title || "Seeker"}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-yellow-400 border-yellow-500/30">
-              {userProfile.totalXP.toLocaleString()} XP
-            </Badge>
-            <Button size="sm" onClick={onOpenChat} className="bg-purple-600 hover:bg-purple-700">
-              <MessageCircle className="w-4 h-4" />
-            </Button>
+          <div className="text-right">
+            <div className="text-lg font-bold">Lv. {level}</div>
+            <div className="text-xs text-purple-300">{totalXP.toLocaleString()} XP</div>
           </div>
+        </div>
+
+        {/* Level Progress */}
+        <div className="mt-3">
+          <div className="flex justify-between text-xs text-purple-300 mb-1">
+            <span>Level {level}</span>
+            <span>Level {level + 1}</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2 bg-purple-900/50" />
         </div>
       </div>
 
-      {/* Mobile Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-black/40 border-purple-500/20 mx-4 mt-4">
-          <TabsTrigger value="overview" className="text-xs">
-            <Target className="w-4 h-4 mr-1" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="tasks" className="text-xs">
-            <Calendar className="w-4 h-4 mr-1" />
-            Tasks
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="text-xs">
-            <TrendingUp className="w-4 h-4 mr-1" />
-            Stats
-          </TabsTrigger>
-          <TabsTrigger value="progress" className="text-xs">
-            <Trophy className="w-4 h-4 mr-1" />
-            Progress
-          </TabsTrigger>
-        </TabsList>
+      {/* Quick Actions */}
+      <div className="p-4 pb-2">
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={onOpenChat}
+            className="bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 h-12"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Chat with Order
+          </Button>
+          <Button
+            onClick={onGenerateTask}
+            className="bg-blue-600/20 border border-blue-500/30 text-blue-300 hover:bg-blue-600/30 h-12"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Task
+          </Button>
+        </div>
+      </div>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="p-4 space-y-4">
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 gap-4">
+      {/* Main Content */}
+      <div className="px-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-black/40 border border-purple-500/20">
+            <TabsTrigger value="overview" className="text-xs">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="text-xs">
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="text-xs">
+              Stats
+            </TabsTrigger>
+            <TabsTrigger value="progress" className="text-xs">
+              Progress
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4 mt-4">
+            {/* Streak Card */}
             <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
               <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-purple-500/20">
-                    <Target className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-purple-300">Today</p>
-                    <p className="text-lg font-bold text-white">{completionRate.toFixed(0)}%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-orange-500/20">
-                    <Flame className="w-4 h-4 text-orange-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-purple-300">Streak</p>
-                    <p className="text-lg font-bold text-white">{userProfile.currentStreak}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Today's Priority Tasks */}
-          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-purple-400 text-sm flex items-center justify-between">
-                Priority Tasks
-                <Badge variant="outline" className="text-xs text-purple-300 border-purple-500/30">
-                  {completedToday}/{totalTasks}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {tasks.slice(0, 3).map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-3 p-2 rounded-lg border border-purple-500/20 bg-black/20"
-                >
-                  <Button
-                    size="sm"
-                    variant={task.status === "completed" ? "default" : "outline"}
-                    onClick={() => task.status !== "completed" && onCompleteTask(task.id)}
-                    disabled={task.status === "completed"}
-                    className="w-6 h-6 p-0 text-xs"
-                  >
-                    {task.status === "completed" ? "✓" : "○"}
-                  </Button>
-
-                  <div className="flex-1 min-w-0">
-                    <h4
-                      className={`text-sm font-medium truncate ${
-                        task.status === "completed" ? "line-through text-gray-400" : "text-white"
-                      }`}
-                    >
-                      {task.title}
-                    </h4>
-                    <p className="text-xs text-purple-300">
-                      {task.estimatedMinutes}min • {task.xpReward} XP
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-              {tasks.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-purple-300 text-sm mb-3">No tasks for today</p>
-                  <Button onClick={onGenerateTasks} size="sm" className="bg-purple-600 hover:bg-purple-700">
-                    Generate Tasks
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-4">
-            <Button onClick={onOpenChat} className="bg-purple-600 hover:bg-purple-700 h-12">
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Chat with Order
-            </Button>
-            <Button
-              onClick={onGenerateTasks}
-              variant="outline"
-              className="border-purple-500/30 text-purple-300 h-12 bg-transparent"
-            >
-              <Target className="w-4 h-4 mr-2" />
-              New Tasks
-            </Button>
-          </div>
-        </TabsContent>
-
-        {/* Tasks Tab */}
-        <TabsContent value="tasks" className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">All Tasks</h2>
-            <Button onClick={onGenerateTasks} size="sm" className="bg-purple-600 hover:bg-purple-700">
-              Generate More
-            </Button>
-          </div>
-
-          <div className="space-y-3">
-            {tasks.map((task) => (
-              <Card key={task.id} className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Button
-                      size="sm"
-                      variant={task.status === "completed" ? "default" : "outline"}
-                      onClick={() => task.status !== "completed" && onCompleteTask(task.id)}
-                      disabled={task.status === "completed"}
-                      className="w-8 h-8 p-0 mt-1"
-                    >
-                      {task.status === "completed" ? "✓" : "○"}
-                    </Button>
-
-                    <div className="flex-1">
-                      <h3
-                        className={`font-medium mb-1 ${
-                          task.status === "completed" ? "line-through text-gray-400" : "text-white"
-                        }`}
-                      >
-                        {task.title}
-                      </h3>
-                      <p className="text-sm text-gray-300 mb-2">{task.description}</p>
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs text-purple-300 border-purple-500/30">
-                          {task.category}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-500/30">
-                          {task.xpReward} XP
-                        </Badge>
-                        <Badge variant="outline" className="text-xs text-blue-400 border-blue-500/30">
-                          {task.estimatedMinutes}min
-                        </Badge>
-                        <Badge variant="outline" className={`text-xs ${getDifficultyColor(task.difficulty)}`}>
-                          Level {task.difficulty}
-                        </Badge>
-                      </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Current Streak</h3>
+                      <p className="text-sm text-gray-400">Keep the momentum going</p>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-orange-400">{userProfile.streak || 0}</div>
+                    <div className="text-xs text-gray-400">days</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+                <CardContent className="p-4 text-center">
+                  <Trophy className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
+                  <div className="text-lg font-bold">{userProfile.achievements?.length || 0}</div>
+                  <div className="text-xs text-gray-400">Achievements</div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
+              <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+                <CardContent className="p-4 text-center">
+                  <Target className="w-6 h-6 mx-auto mb-2 text-green-400" />
+                  <div className="text-lg font-bold">{userProfile.completedTasks || 0}</div>
+                  <div className="text-xs text-gray-400">Tasks Done</div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Stats Tab */}
-        <TabsContent value="stats" className="p-4 space-y-4">
-          <h2 className="text-lg font-semibold text-white mb-4">Core Attributes</h2>
-
-          <div className="space-y-4">
-            {Object.entries(userProfile.stats).map(([stat, value]) => {
-              const Icon = statIcons[stat as keyof typeof statIcons]
-              const colorClass = statColors[stat as keyof typeof statColors]
-
-              return (
-                <Card key={stat} className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`p-2 rounded-full bg-current/20`}>
-                        <Icon className={`w-5 h-5 ${colorClass}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium capitalize text-white">{stat}</h3>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-white">{value}</span>
-                            <Badge variant="outline" className={`text-xs ${colorClass} border-current`}>
-                              {getRankForStat(value)}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
+            {/* Recent Achievements */}
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  Recent Achievements
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recentAchievements.map((achievement) => (
+                  <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                    <div className="text-lg">{achievement.icon}</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{achievement.title}</div>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        {achievement.rarity}
+                      </Badge>
                     </div>
-                    <Progress
-                      value={value}
-                      className="h-2"
-                      style={{
-                        background: "rgba(255,255,255,0.1)",
-                      }}
-                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-4 mt-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Active Tasks</h2>
+              <Button size="sm" onClick={onGenerateTask} className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {activeTasks.map((task) => (
+                <Card key={task.id} className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium text-sm flex-1">{task.title}</h3>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ml-2 ${
+                          task.difficulty === "easy"
+                            ? "text-green-400 border-green-400/30"
+                            : task.difficulty === "medium"
+                              ? "text-yellow-400 border-yellow-400/30"
+                              : "text-red-400 border-red-400/30"
+                        }`}
+                      >
+                        {task.difficulty}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Zap className="w-3 h-3" />+{task.xp} XP
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {task.timeLeft}
+                        </span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-green-400 hover:text-green-300">
+                        <CheckCircle2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              )
-            })}
-          </div>
-        </TabsContent>
+              ))}
+            </div>
+          </TabsContent>
 
-        {/* Progress Tab */}
-        <TabsContent value="progress" className="p-4 space-y-4">
-          <h2 className="text-lg font-semibold text-white mb-4">Your Journey</h2>
+          <TabsContent value="stats" className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 gap-3">
+              {Object.entries(stats).map(([statName, value]) => {
+                const IconComponent = statIcons[statName as keyof typeof statIcons]
+                const colorClass = statColors[statName as keyof typeof statColors]
+                const percentage = Math.min((value / 100) * 100, 100)
 
-          {/* Rank Progress */}
-          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-            <CardHeader>
-              <CardTitle className="text-purple-400 text-sm">Current Rank</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-2">{userProfile.currentRank}</div>
-                <div className="text-sm text-purple-300 mb-4">Level {userProfile.level}</div>
-                <Progress value={userProfile.rankProgress} className="h-2" />
-                <p className="text-xs text-gray-400 mt-2">Progress to next rank</p>
-              </div>
-            </CardContent>
-          </Card>
+                return (
+                  <Card key={statName} className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg ${colorClass} flex items-center justify-center`}>
+                            <IconComponent className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-sm">{statName}</h3>
+                            <p className="text-xs text-gray-400">Level {Math.floor(value / 10) + 1}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold">{value}</div>
+                          <div className="text-xs text-gray-400">points</div>
+                        </div>
+                      </div>
+                      <Progress value={percentage} className="h-2 bg-gray-800" />
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </TabsContent>
 
-          {/* Achievements Preview */}
-          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-            <CardHeader>
-              <CardTitle className="text-purple-400 text-sm flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                Recent Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-4">
-                <p className="text-gray-400 text-sm">Complete tasks to unlock achievements</p>
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="progress" className="space-y-4 mt-4">
+            {/* Level Progress */}
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                  Level Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>Current Level</span>
+                    <span className="font-bold">{level}</span>
+                  </div>
+                  <Progress value={progressPercentage} className="h-3 bg-gray-800" />
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>{currentLevelXP.toLocaleString()} XP</span>
+                    <span>{nextLevelXP.toLocaleString()} XP</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Journey Insights */}
-          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
-            <CardHeader>
-              <CardTitle className="text-purple-400 text-sm">Journey Insights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Strongest Attribute</span>
-                <span className="text-sm font-medium text-white capitalize">{getStrongestStat(userProfile.stats)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Growth Opportunity</span>
-                <span className="text-sm font-medium text-orange-300 capitalize">
-                  {getWeakestStat(userProfile.stats)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Next Milestone</span>
-                <span className="text-sm font-medium text-green-300">{getNextMilestone(userProfile)}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            {/* Rank Information */}
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <User className="w-5 h-5 text-purple-400" />
+                  Hunter Rank
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-xl">{userProfile.rank?.[0] || "N"}</span>
+                  </div>
+                  <h3 className="font-bold text-lg">{userProfile.rank || "Novice"}</h3>
+                  <p className="text-sm text-gray-400">{userProfile.title || "Seeker of Truth"}</p>
+                  <Badge variant="outline" className="text-purple-300 border-purple-500/30">
+                    {userProfile.hunterType || "Balanced"}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Weekly Summary */}
+            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-green-400" />
+                  This Week
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-green-400">12</div>
+                    <div className="text-xs text-gray-400">Tasks Completed</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-400">850</div>
+                    <div className="text-xs text-gray-400">XP Gained</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Bottom Padding for Tab Navigation */}
+      <div className="h-20"></div>
     </div>
   )
-}
-
-// Helper functions
-function getRankForStat(value: number): string {
-  if (value >= 90) return "S"
-  if (value >= 80) return "A"
-  if (value >= 70) return "B"
-  if (value >= 60) return "C"
-  if (value >= 50) return "D"
-  return "E"
-}
-
-function getDifficultyColor(difficulty: number): string {
-  const colors = {
-    1: "text-green-400 border-green-500/30",
-    2: "text-blue-400 border-blue-500/30",
-    3: "text-yellow-400 border-yellow-500/30",
-    4: "text-orange-400 border-orange-500/30",
-    5: "text-red-400 border-red-500/30",
-  }
-  return colors[difficulty as keyof typeof colors] || colors[1]
-}
-
-function getStrongestStat(stats: UserProfile["stats"]): string {
-  return Object.entries(stats).reduce((max, [stat, value]) => (value > max.value ? { stat, value } : max), {
-    stat: "",
-    value: -1,
-  }).stat
-}
-
-function getWeakestStat(stats: UserProfile["stats"]): string {
-  return Object.entries(stats).reduce((min, [stat, value]) => (value < min.value ? { stat, value } : min), {
-    stat: "",
-    value: 101,
-  }).stat
-}
-
-function getNextMilestone(user: UserProfile): string {
-  const totalStats = Object.values(user.stats).reduce((sum, stat) => sum + stat, 0)
-  const avgStat = totalStats / 6
-
-  if (avgStat < 15) return "Seeker Rank"
-  if (avgStat < 30) return "Adept Rank"
-  if (avgStat < 45) return "Expert Rank"
-  if (avgStat < 60) return "Master Rank"
-  if (avgStat < 70) return "Sage Rank"
-  return "Transcendence"
 }
