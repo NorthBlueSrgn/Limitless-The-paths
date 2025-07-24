@@ -63,8 +63,17 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-purple-950 to-black flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg%3E%3Cg fill=\"none\" fillRule=\"evenodd\"%3E%3Cg fill=\"%23a855f7\" fillOpacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-      
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10"></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(168, 85, 247, 0.15) 1px, transparent 0)`,
+            backgroundSize: "20px 20px",
+          }}
+        ></div>
+      </div>
+
       <Card className="w-full max-w-md bg-black/80 backdrop-blur-xl border-purple-500/30 shadow-2xl shadow-purple-500/20">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
@@ -79,7 +88,7 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
             <p className="text-purple-300 mt-2">Begin your path to greatness</p>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs defaultValue="login" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 bg-gray-900/50 border border-purple-500/30">
@@ -94,7 +103,9 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email" className="text-purple-300">Email</Label>
+                  <Label htmlFor="login-email" className="text-purple-300">
+                    Email
+                  </Label>
                   <Input
                     id="login-email"
                     type="email"
@@ -104,9 +115,11 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
                     placeholder="hunter@example.com"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="login-password" className="text-purple-300">Password</Label>
+                  <Label htmlFor="login-password" className="text-purple-300">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Input
                       id="login-password"
@@ -123,14 +136,21 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
                       className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
                     </Button>
                   </div>
                 </div>
 
                 {error && <p className="text-red-400 text-sm">{error}</p>}
 
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
                   Enter the Path
                 </Button>
               </form>
@@ -139,7 +159,9 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-purple-300">Email</Label>
+                  <Label htmlFor="signup-email" className="text-purple-300">
+                    Email
+                  </Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -151,7 +173,9 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-username" className="text-purple-300">Username</Label>
+                  <Label htmlFor="signup-username" className="text-purple-300">
+                    Username
+                  </Label>
                   <Input
                     id="signup-username"
                     type="text"
@@ -161,9 +185,11 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
                     placeholder="Hunter"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-purple-300">Password</Label>
+                  <Label htmlFor="signup-password" className="text-purple-300">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Input
                       id="signup-password"
@@ -180,13 +206,19 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
                       className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password" className="text-purple-300">Confirm Password</Label>
+                  <Label htmlFor="confirm-password" className="text-purple-300">
+                    Confirm Password
+                  </Label>
                   <Input
                     id="confirm-password"
                     type={showPassword ? "text" : "password"}
@@ -199,7 +231,10 @@ export function AuthForm({ onLogin, onSignup }: AuthFormProps) {
 
                 {error && <p className="text-red-400 text-sm">{error}</p>}
 
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
                   Begin Your Journey
                 </Button>
               </form>
