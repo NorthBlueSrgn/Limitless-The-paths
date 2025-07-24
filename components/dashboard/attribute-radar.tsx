@@ -1,22 +1,17 @@
 "use client"
 
+import type { Attribute, UserProfile } from "@/types/limitless"
+
 interface AttributeRadarProps {
-  attributes: {
-    spiritual: number
-    intelligence: number
-    creative: number
-    health: number
-    physical: number
-    social: number
-  }
+  attributes: Attribute[]
+  userProfile: UserProfile
   size?: number
 }
 
-export function AttributeRadar({ attributes, size = 300 }: AttributeRadarProps) {
+export function AttributeRadar({ attributes, userProfile, size = 300 }: AttributeRadarProps) {
   const center = size / 2
   const radius = size / 2 - 40
-  const attributeArray = Object.entries(attributes)
-  const angleStep = (2 * Math.PI) / attributeArray.length
+  const angleStep = (2 * Math.PI) / attributes.length
 
   const getPoint = (value: number, index: number) => {
     const angle = index * angleStep - Math.PI / 2
@@ -33,17 +28,8 @@ export function AttributeRadar({ attributes, size = 300 }: AttributeRadarProps) 
     return { x, y }
   }
 
-  const pathData = attributeArray.map(([_, value], index) => getPoint(value, index))
+  const pathData = attributes.map((attr, index) => getPoint(attr.value, index))
   const pathString = pathData.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ") + " Z"
-
-  const attributeLabels = {
-    spiritual: "Spiritual",
-    intelligence: "Intelligence",
-    creative: "Creative",
-    health: "Health",
-    physical: "Physical",
-    social: "Social",
-  }
 
   return (
     <div className="flex flex-col items-center">
@@ -79,7 +65,7 @@ export function AttributeRadar({ attributes, size = 300 }: AttributeRadarProps) 
         ))}
 
         {/* Axis lines */}
-        {attributeArray.map((_, index) => {
+        {attributes.map((_, index) => {
           const angle = index * angleStep - Math.PI / 2
           const endX = center + Math.cos(angle) * radius
           const endY = center + Math.sin(angle) * radius
@@ -117,11 +103,12 @@ export function AttributeRadar({ attributes, size = 300 }: AttributeRadarProps) 
             stroke="white"
             strokeWidth="3"
             filter="url(#glow)"
+            className="soul-node"
           />
         ))}
 
         {/* Labels */}
-        {attributeArray.map(([key], index) => {
+        {attributes.map((attr, index) => {
           const labelPoint = getLabelPoint(index)
           return (
             <text
@@ -132,7 +119,7 @@ export function AttributeRadar({ attributes, size = 300 }: AttributeRadarProps) 
               className="text-sm font-medium fill-purple-300"
               filter="url(#glow)"
             >
-              {attributeLabels[key as keyof typeof attributeLabels]}
+              {attr.name}
             </text>
           )
         })}
@@ -145,7 +132,7 @@ export function AttributeRadar({ attributes, size = 300 }: AttributeRadarProps) 
           className="font-orbitron text-2xl font-bold fill-purple-400"
           filter="url(#glow)"
         >
-          RANK E
+          RANK {userProfile.rank}
         </text>
         <text x={center} y={center + 15} textAnchor="middle" className="text-sm fill-gray-400">
           Hunter Classification
