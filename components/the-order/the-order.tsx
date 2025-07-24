@@ -1,20 +1,23 @@
 "use client"
 
 import React from "react"
-
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageCircle, Send, Bot, User, Zap, Brain, BookOpen, Target, Eye, Scroll } from "lucide-react"
+import { MessageCircle, Send, Bot, User, Zap, Brain, BookOpen, Target, Eye, Scroll, Loader2 } from "lucide-react"
 import type { AIMessage, UserProfile } from "@/types/limitless"
 
 interface TheOrderProps {
   messages: AIMessage[]
   addMessage: (content: string, category?: AIMessage["category"]) => void
   userProfile: UserProfile
+  userProgress?: {
+    activePaths: string[]
+    completedTasks: number
+  }
 }
 
 const categoryIcons = {
@@ -35,14 +38,89 @@ const categoryColors = {
   lore: "text-orange-400 border-orange-400",
 }
 
-export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderProps) {
+export function TheOrder({ messages = [], addMessage, userProfile, userProgress }: TheOrderProps) {
   const [inputMessage, setInputMessage] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<AIMessage["category"]>("guidance")
+  const [isLoading, setIsLoading] = useState(false)
+  const [localMessages, setLocalMessages] = useState<AIMessage[]>(messages)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim()) {
-      addMessage(inputMessage, selectedCategory)
-      setInputMessage("")
+  // Sync with parent messages
+  useEffect(() => {
+    setLocalMessages(messages)
+  }, [messages])
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    }
+  }, [localMessages])
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return
+
+    const userMessage: AIMessage = {
+      id: `msg_${Date.now()}_user`,
+      content: inputMessage,
+      type: "user",
+      timestamp: new Date().toISOString(),
+      category: selectedCategory,
+    }
+
+    // Add user message immediately
+    setLocalMessages((prev) => [...prev, userMessage])
+    addMessage(inputMessage, selectedCategory)
+    setInputMessage("")
+    setIsLoading(true)
+
+    try {
+      // Call the API with user context
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: inputMessage,
+          category: selectedCategory,
+          userProfile,
+          userProgress,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const aiReply = data.reply || "The Order remains silent..."
+
+      const aiMessage: AIMessage = {
+        id: `msg_${Date.now()}_ai`,
+        content: aiReply,
+        type: "assistant",
+        timestamp: new Date().toISOString(),
+        category: selectedCategory,
+      }
+
+      setLocalMessages((prev) => [...prev, aiMessage])
+      // Also update parent state if needed
+      setTimeout(() => {
+        addMessage(aiReply, selectedCategory)
+      }, 100)
+    } catch (error) {
+      console.error("Failed to fetch AI response:", error)
+      const errorMessage: AIMessage = {
+        id: `msg_${Date.now()}_error`,
+        content: "The Order's voice fades into static... The connection has been severed. Try again, Hunter.",
+        type: "assistant",
+        timestamp: new Date().toISOString(),
+        category: selectedCategory,
+      }
+      setLocalMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -52,6 +130,15 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
       handleSendMessage()
     }
   }
+
+  const quickQueries = [
+    { text: "Analyze my current progress", category: "analysis" as const },
+    { text: "Give me a challenge to overcome", category: "challenge" as const },
+    { text: "Share ancient wisdom", category: "philosophy" as const },
+    { text: "Tell me my story", category: "story" as const },
+    { text: "Guide my next steps", category: "guidance" as const },
+    { text: "Reveal hidden knowledge", category: "lore" as const },
+  ]
 
   return (
     <div className="space-y-6">
@@ -71,13 +158,14 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
               <CardTitle className="text-purple-400 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5" />
                 Communion with The Order
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col p-0">
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
                 <div className="space-y-4">
-                  {messages.length === 0 ? (
+                  {localMessages.length === 0 ? (
                     <div className="text-center py-12">
                       <Bot className="w-16 h-16 mx-auto mb-4 text-purple-400 opacity-50" />
                       <h3 className="text-lg font-semibold text-white mb-2">The Order Awaits</h3>
@@ -86,7 +174,7 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
                       </p>
                     </div>
                   ) : (
-                    messages.map((message) => (
+                    localMessages.map((message) => (
                       <div
                         key={message.id}
                         className={`flex gap-3 ${message.type === "user" ? "justify-end" : "justify-start"}`}
@@ -143,6 +231,23 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
                       </div>
                     ))
                   )}
+
+                  {/* Loading indicator */}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="flex gap-3 max-w-[80%]">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="bg-purple-900/20 border border-purple-500/30 p-3 rounded-lg">
+                          <div className="flex items-center gap-2 text-purple-300">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-sm">The Order contemplates...</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
 
@@ -176,14 +281,15 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
+                      disabled={isLoading}
                       className="bg-black/20 border-purple-500/30 text-white placeholder:text-purple-400"
                     />
                     <Button
                       onClick={handleSendMessage}
-                      disabled={!inputMessage.trim()}
+                      disabled={!inputMessage.trim() || isLoading}
                       className="bg-purple-600 hover:bg-purple-700"
                     >
-                      <Send className="w-4 h-4" />
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
@@ -231,21 +337,16 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
               <CardTitle className="text-purple-400 text-lg">Quick Queries</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {[
-                { text: "Analyze my progress", category: "analysis" as const },
-                { text: "Give me a challenge", category: "challenge" as const },
-                { text: "Share wisdom", category: "philosophy" as const },
-                { text: "Tell me a story", category: "story" as const },
-                { text: "Provide guidance", category: "guidance" as const },
-              ].map((query) => (
+              {quickQueries.map((query, index) => (
                 <Button
-                  key={query.text}
+                  key={index}
                   variant="outline"
                   size="sm"
                   onClick={() => {
                     setSelectedCategory(query.category)
-                    addMessage(query.text, query.category)
+                    setInputMessage(query.text)
                   }}
+                  disabled={isLoading}
                   className="w-full justify-start text-xs border-purple-500/30 text-purple-300 hover:bg-purple-600/10"
                 >
                   {React.createElement(categoryIcons[query.category], { className: "w-3 h-3 mr-2" })}
@@ -266,6 +367,18 @@ export function TheOrder({ messages = [], addMessage, userProfile }: TheOrderPro
                 "I am the voice in the void, the guide through darkness. Your transformation is my purpose, your growth
                 my obsession."
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Connection Status */}
+          <Card className="bg-black/40 backdrop-blur-xl border-purple-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-xs">
+                <div
+                  className={`w-2 h-2 rounded-full ${isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400"}`}
+                ></div>
+                <span className="text-purple-300">{isLoading ? "Channeling wisdom..." : "Connection stable"}</span>
+              </div>
             </CardContent>
           </Card>
         </div>

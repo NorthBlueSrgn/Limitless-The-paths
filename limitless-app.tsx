@@ -1,53 +1,102 @@
 "use client"
 
 import { useState } from "react"
-import { MainLayout } from "./components/layout/main-layout"
-import { Navigation } from "./components/layout/navigation"
-import { Overview } from "./components/dashboard/overview"
-import { StoryChapter } from "./components/story/story-chapter"
-import { Chronicles } from "./components/chronicles/chronicles"
-import { HunterExams } from "./components/hunter-exams/hunter-exams"
+import { MainLayout } from "@/components/layout/main-layout"
+import { Dashboard } from "@/components/dashboard/dashboard"
+import { SoulMap } from "@/components/soul-map/soul-map"
+import { Paths } from "@/components/paths/paths"
+import { ChapterBlack } from "@/components/chapter-black/chapter-black"
+import { Archives } from "@/components/archives/archives"
+import { TheOrder } from "@/components/the-order/the-order"
+import { Labyrinth } from "@/components/labyrinth/labyrinth"
+import { AdvancedStats } from "@/components/advanced-stats/advanced-stats"
+import { useLimitlessData } from "@/hooks/use-limitless-data"
 
 export default function LimitlessApp() {
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("dashboard")
+  const {
+    userProfile,
+    attributes,
+    soulTraits,
+    paths,
+    activePaths,
+    dailyTasks,
+    storyChapters,
+    journalEntries,
+    hunterExams,
+    chronicles,
+    codexEntries,
+    aiMessages,
+    completeTask,
+    addJournalEntry,
+    addChronicle,
+    addAIMessage,
+  } = useLimitlessData()
+
+  // Calculate user progress for The Order
+  const userProgress = {
+    activePaths: activePaths.map((path) => path.name),
+    completedTasks: dailyTasks.filter((task) => task.completed).length,
+  }
 
   const renderContent = () => {
     switch (activeTab) {
-      case "overview":
-        return <Overview />
-      case "paths":
+      case "dashboard":
         return (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-white mb-4">Paths</h2>
-            <p className="text-gray-400">Path management coming soon...</p>
-          </div>
+          <Dashboard
+            userProfile={userProfile}
+            attributes={attributes}
+            paths={activePaths}
+            dailyTasks={dailyTasks}
+            storyChapters={storyChapters}
+            onCompleteTask={completeTask}
+          />
         )
-      case "story":
-        return <StoryChapter />
-      case "hunter-exams":
-        return <HunterExams />
-      case "chronicles":
-        return <Chronicles />
+      case "soul-map":
+        return <SoulMap attributes={attributes} soulTraits={soulTraits} userProfile={userProfile} />
+      case "paths":
+        return <Paths paths={paths} userProfile={userProfile} />
+      case "chapter-black":
+        return <ChapterBlack storyChapters={storyChapters} userProfile={userProfile} />
+      case "archives":
+        return (
+          <Archives
+            journalEntries={journalEntries}
+            chronicles={chronicles}
+            onAddJournalEntry={addJournalEntry}
+            onAddChronicle={addChronicle}
+          />
+        )
+      case "the-order":
+        return (
+          <TheOrder
+            messages={aiMessages}
+            addMessage={addAIMessage}
+            userProfile={userProfile}
+            userProgress={userProgress}
+          />
+        )
+      case "labyrinth":
+        return <Labyrinth codexEntries={codexEntries} userProfile={userProfile} />
+      case "advanced-stats":
+        return <AdvancedStats userProfile={userProfile} attributes={attributes} paths={paths} />
       default:
-        return <Overview />
+        return (
+          <Dashboard
+            userProfile={userProfile}
+            attributes={attributes}
+            paths={activePaths}
+            dailyTasks={dailyTasks}
+            storyChapters={storyChapters}
+            onCompleteTask={completeTask}
+          />
+        )
     }
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Animated background particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-purple-500/3 to-transparent rounded-full" />
-      </div>
-
-      <MainLayout>
-        <div className="flex">
-          <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-          <main className="flex-1 ml-64">{renderContent()}</main>
-        </div>
-      </MainLayout>
-    </div>
+    <MainLayout userProfile={userProfile} activePaths={activePaths} activeTab={activeTab} onTabChange={setActiveTab}>
+      {renderContent()}
+    </MainLayout>
   )
 }
