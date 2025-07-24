@@ -13,6 +13,7 @@ export interface UserProfile {
   lastActive: string
   streak: number
   title?: string
+  aura?: string
 }
 
 export interface Attribute {
@@ -23,6 +24,7 @@ export interface Attribute {
   xpGained: number
   decayRate: number
   lastUpdated: string
+  color: string
 }
 
 export interface SoulTrait {
@@ -34,6 +36,7 @@ export interface SoulTrait {
   prerequisites: string[]
   effects: string[]
   color: string
+  position: { x: number; y: number }
 }
 
 export interface Path {
@@ -51,6 +54,7 @@ export interface Path {
   rewards: PathReward[]
   decayRate: number
   lastActivity: string
+  archetype: string
 }
 
 export interface PathReward {
@@ -71,6 +75,7 @@ export interface DailyTask {
   completed: boolean
   timeEstimate: number
   deadline?: string
+  type: "daily" | "weekly" | "challenge"
 }
 
 export interface StoryChapter {
@@ -84,6 +89,8 @@ export interface StoryChapter {
   requiredTaskCompletion: number
   rewards: PathReward[]
   imageUrl?: string
+  tone: "light" | "neutral" | "dark" | "ascension"
+  characterMoments: string[]
 }
 
 export interface JournalEntry {
@@ -94,9 +101,10 @@ export interface JournalEntry {
   mood: string[]
   tags: string[]
   season: string
-  type: "Reflection" | "Breakthrough" | "Setback" | "Philosophy" | "Goal"
+  type: "Reflection" | "Breakthrough" | "Setback" | "Philosophy" | "Goal" | "Rival Event"
   linkedPaths: string[]
   xpGained: number
+  storyImpact?: string
 }
 
 export interface HunterExam {
@@ -110,12 +118,14 @@ export interface HunterExam {
   completed: boolean
   attempts: number
   bestScore: number
+  duration: number
+  intensity: "Standard" | "Intense" | "Extreme"
 }
 
 export interface ExamPhase {
   id: string
   name: string
-  type: "Task" | "Reflection" | "Challenge" | "Quiz"
+  type: "Task" | "Reflection" | "Challenge" | "Quiz" | "Endurance"
   description: string
   requirements: string[]
   timeLimit?: number
@@ -131,4 +141,16 @@ export interface DecayMetric {
   lastActivity: string
   riskLevel: "Low" | "Medium" | "High" | "Critical"
   recommendations: string[]
+}
+
+export interface Chronicle {
+  id: string
+  title: string
+  content: string
+  date: string
+  type: "Journal" | "Story Response" | "Mindset Shift" | "Arc Reflection"
+  linkedChapter?: string
+  mood: string
+  insights: string[]
+  orderAnalysis?: string
 }

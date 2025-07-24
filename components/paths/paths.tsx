@@ -6,67 +6,107 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
-import { Target, Plus, Search, Crown, TrendingUp, AlertTriangle } from "lucide-react"
+import { Target, Search, Crown, TrendingUp, AlertTriangle, Eye, Zap } from "lucide-react"
 
 const availablePaths = [
   {
-    id: "chess_predator",
-    name: "Chess Predator",
-    description: "Master the art of strategic thinking through chess mastery",
+    id: "path_of_mastery",
+    name: "Path of Mastery",
+    description: "The relentless pursuit of excellence in chosen domains",
     category: "Mental Mastery",
-    difficulty: "Intermediate" as const,
-    estimatedDuration: "3 months",
-    associatedAttributes: ["Intelligence", "Resilience"],
-    rewards: [
-      { type: "Title", value: 1, target: "Chess Master" },
-      { type: "Trait", value: 1, target: "Strategist" },
-      { type: "XP", value: 2000 },
-    ],
-    prerequisites: ["Intelligence >= 25", "Complete 'Foundation of Logic' path"],
-    stages: [
-      "Learn basic tactics",
-      "Master opening principles",
-      "Develop endgame skills",
-      "Achieve rating milestones",
-      "Tournament participation",
-    ],
-  },
-  {
-    id: "acolyte_discipline",
-    name: "Acolyte of Discipline",
-    description: "Forge unbreakable habits and iron willpower",
-    category: "Self Mastery",
     difficulty: "Advanced" as const,
     estimatedDuration: "6 months",
-    associatedAttributes: ["Resilience", "Spiritual"],
+    associatedAttributes: ["Intelligence", "Resilience", "Creativity"],
+    archetype: "The Perfectionist",
     rewards: [
-      { type: "Title", value: 1, target: "Iron Will" },
-      { type: "Trait", value: 1, target: "Obsidian" },
+      { type: "Title", value: 1, target: "Master of Craft" },
+      { type: "Trait", value: 1, target: "Obsidian Focus" },
       { type: "XP", value: 3500 },
     ],
-    prerequisites: ["Resilience >= 30", "30-day streak"],
+    prerequisites: ["Intelligence >= 30", "Complete 'Foundation' path"],
     stages: [
-      "Morning routine mastery",
-      "Meditation consistency",
-      "Physical discipline",
-      "Mental fortitude trials",
-      "Transcendence",
+      "Skill identification and baseline",
+      "Deliberate practice protocols",
+      "Performance measurement systems",
+      "Advanced technique integration",
+      "Mastery demonstration",
     ],
+    philosophy:
+      "Excellence is not a skill, it's an attitude. Every repetition is a choice between mediocrity and greatness.",
   },
   {
-    id: "creative_forge",
-    name: "Creative Forge",
-    description: "Unleash your creative potential through daily practice",
-    category: "Creative Expression",
-    difficulty: "Beginner" as const,
-    estimatedDuration: "2 months",
-    associatedAttributes: ["Creativity", "Intelligence"],
+    id: "path_of_will",
+    name: "Path of Will",
+    description: "Forge unbreakable mental fortitude and discipline",
+    category: "Self Mastery",
+    difficulty: "Master" as const,
+    estimatedDuration: "12 months",
+    associatedAttributes: ["Resilience", "Spiritual", "Physical"],
+    archetype: "The Unbreakable",
     rewards: [
-      { type: "Title", value: 1, target: "Artisan" },
-      { type: "XP", value: 1500 },
+      { type: "Title", value: 1, target: "Iron Will" },
+      { type: "Trait", value: 1, target: "Obsidian Core" },
+      { type: "XP", value: 5000 },
     ],
-    prerequisites: ["None"],
-    stages: ["Daily sketching", "Idea generation", "Project completion", "Style development", "Portfolio creation"],
+    prerequisites: ["Resilience >= 40", "60-day streak", "Complete Hunter Exam"],
+    stages: [
+      "Discomfort tolerance training",
+      "Mental resistance protocols",
+      "Emotional regulation mastery",
+      "Stress inoculation trials",
+      "Transcendence achievement",
+    ],
+    philosophy:
+      "The mind is everything. What you think you become. Discipline is the bridge between thought and accomplishment.",
+  },
+  {
+    id: "path_of_spiritual_discipline",
+    name: "Path of Spiritual Discipline",
+    description: "Cultivate inner awareness and transcendent understanding",
+    category: "Spiritual Growth",
+    difficulty: "Intermediate" as const,
+    estimatedDuration: "9 months",
+    associatedAttributes: ["Spiritual", "Intelligence", "Health"],
+    archetype: "The Sage",
+    rewards: [
+      { type: "Title", value: 1, target: "Enlightened Hunter" },
+      { type: "Trait", value: 1, target: "Oracle Vision" },
+      { type: "XP", value: 4000 },
+    ],
+    prerequisites: ["Spiritual >= 25", "Daily meditation streak"],
+    stages: [
+      "Mindfulness foundation",
+      "Meditation deepening",
+      "Philosophical study",
+      "Wisdom integration",
+      "Enlightenment glimpse",
+    ],
+    philosophy: "Know thyself. The greatest victory is victory over the self. Inner peace is the ultimate power.",
+  },
+  {
+    id: "path_of_the_strategist",
+    name: "Path of the Strategist",
+    description: "Master the art of systematic thinking and long-term planning",
+    category: "Mental Mastery",
+    difficulty: "Intermediate" as const,
+    estimatedDuration: "4 months",
+    associatedAttributes: ["Intelligence", "Creativity", "Resilience"],
+    archetype: "The Mastermind",
+    rewards: [
+      { type: "Title", value: 1, target: "Grand Strategist" },
+      { type: "Trait", value: 1, target: "Chess Master Mind" },
+      { type: "XP", value: 2500 },
+    ],
+    prerequisites: ["Intelligence >= 20", "Complete logic challenges"],
+    stages: [
+      "Systems thinking development",
+      "Pattern recognition training",
+      "Strategic planning protocols",
+      "Decision tree mastery",
+      "Grand strategy execution",
+    ],
+    philosophy:
+      "Every battle is won before it's fought. The supreme excellence is to subdue the enemy without fighting.",
   },
 ]
 
@@ -74,13 +114,15 @@ export function Paths() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [activePaths, setActivePaths] = useState<string[]>([])
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
 
-  const categories = ["All", "Mental Mastery", "Self Mastery", "Creative Expression", "Physical Excellence"]
+  const categories = ["All", "Mental Mastery", "Self Mastery", "Spiritual Growth", "Physical Excellence"]
 
   const filteredPaths = availablePaths.filter((path) => {
     const matchesSearch =
       path.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      path.description.toLowerCase().includes(searchTerm.toLowerCase())
+      path.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      path.archetype.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === "All" || path.category === selectedCategory
     return matchesSearch && matchesCategory
   })
@@ -93,7 +135,7 @@ export function Paths() {
   }
 
   const handleActivatePath = (pathId: string) => {
-    if (!activePaths.includes(pathId)) {
+    if (!activePaths.includes(pathId) && activePaths.length < 3) {
       setActivePaths((prev) => [...prev, pathId])
     }
   }
@@ -102,13 +144,13 @@ export function Paths() {
     setActivePaths((prev) => prev.filter((id) => id !== pathId))
   }
 
+  const selectedPathData = selectedPath ? availablePaths.find((p) => p.id === selectedPath) : null
+
   return (
     <div className="space-y-6">
       <div className="text-center space-y-4">
-        <h1 className="font-orbitron text-4xl font-bold bg-gradient-to-r from-white to-purple-300 bg-clip-text text-transparent">
-          Paths of Ascension
-        </h1>
-        <p className="text-gray-400 text-lg">Choose your journey and forge your destiny</p>
+        <h1 className="font-orbitron text-5xl font-bold chapter-title">PATHS OF ASCENSION</h1>
+        <p className="text-gray-400 text-lg manga-text">Choose your journey and forge your destiny</p>
       </div>
 
       {/* Search and Filters */}
@@ -118,7 +160,7 @@ export function Paths() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search paths..."
+                placeholder="Search paths and archetypes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 bg-black/20 border-white/10 text-white placeholder:text-gray-400"
@@ -147,15 +189,15 @@ export function Paths() {
 
       {/* Active Paths */}
       {activePaths.length > 0 && (
-        <Card className="glass-card">
+        <Card className="glass-card border-purple-500/30 bg-purple-500/5">
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
+            <CardTitle className="text-white flex items-center font-orbitron">
               <Crown className="h-5 w-5 mr-2 text-purple-400" />
-              Active Paths
+              Active Paths ({activePaths.length}/3)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activePaths.map((pathId) => {
                 const path = availablePaths.find((p) => p.id === pathId)
                 if (!path) return null
@@ -165,7 +207,7 @@ export function Paths() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="font-bold text-white">{path.name}</h3>
-                        <p className="text-gray-400 text-sm">{path.category}</p>
+                        <p className="text-gray-400 text-sm">{path.archetype}</p>
                       </div>
                       <Button
                         variant="outline"
@@ -197,15 +239,26 @@ export function Paths() {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-white font-orbitron">{path.name}</CardTitle>
-                    <p className="text-gray-400 text-sm mt-1">{path.category}</p>
+                    <p className="text-purple-400 text-sm mt-1 font-medium">{path.archetype}</p>
+                    <p className="text-gray-400 text-xs">{path.category}</p>
                   </div>
-                  <Badge variant="outline" className={`${difficultyColors[path.difficulty]} font-orbitron`}>
-                    {path.difficulty}
-                  </Badge>
+                  <div className="flex flex-col items-end space-y-2">
+                    <Badge variant="outline" className={`${difficultyColors[path.difficulty]} font-orbitron`}>
+                      {path.difficulty}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedPath(selectedPath === path.id ? null : path.id)}
+                      className="text-purple-400 hover:text-purple-300"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-gray-300">{path.description}</p>
+                <p className="text-gray-300 manga-text">{path.description}</p>
 
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
@@ -216,6 +269,11 @@ export function Paths() {
                     <TrendingUp className="h-4 w-4 text-blue-400" />
                     <span className="text-gray-400">{path.associatedAttributes.join(", ")}</span>
                   </div>
+                </div>
+
+                {/* Philosophy Quote */}
+                <div className="p-3 bg-black/20 rounded-lg border-l-4 border-purple-500">
+                  <p className="text-purple-300 text-sm italic manga-text">"{path.philosophy}"</p>
                 </div>
 
                 {/* Prerequisites */}
@@ -231,32 +289,35 @@ export function Paths() {
                   </div>
                 </div>
 
-                {/* Stages */}
-                <div>
-                  <h4 className="text-sm font-medium text-white mb-2">Path Stages</h4>
-                  <div className="space-y-1">
-                    {path.stages.slice(0, 3).map((stage, index) => (
-                      <div key={index} className="text-xs text-gray-400">
-                        {index + 1}. {stage}
+                {/* Expanded Path Details */}
+                {selectedPath === path.id && (
+                  <div className="space-y-4 border-t border-white/10 pt-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-white mb-2">Path Stages</h4>
+                      <div className="space-y-2">
+                        {path.stages.map((stage, index) => (
+                          <div key={index} className="flex items-center space-x-3 text-sm">
+                            <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/50 flex items-center justify-center">
+                              <span className="text-purple-400 text-xs">{index + 1}</span>
+                            </div>
+                            <span className="text-gray-300">{stage}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    {path.stages.length > 3 && (
-                      <div className="text-xs text-gray-500">+{path.stages.length - 3} more stages...</div>
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                {/* Rewards */}
-                <div>
-                  <h4 className="text-sm font-medium text-white mb-2">Rewards</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {path.rewards.map((reward, index) => (
-                      <Badge key={index} variant="outline" className="text-xs border-green-500/50 text-green-400">
-                        {reward.type === "XP" ? `${reward.value} XP` : reward.target}
-                      </Badge>
-                    ))}
+                    <div>
+                      <h4 className="text-sm font-medium text-white mb-2">Rewards</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {path.rewards.map((reward, index) => (
+                          <Badge key={index} variant="outline" className="text-xs border-green-500/50 text-green-400">
+                            {reward.type === "XP" ? `${reward.value} XP` : reward.target}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <Button
                   onClick={() => (isActive ? handleDeactivatePath(path.id) : handleActivatePath(path.id))}
@@ -265,8 +326,14 @@ export function Paths() {
                   }
                   disabled={!isActive && activePaths.length >= 3}
                 >
-                  {isActive ? "Deactivate Path" : "Activate Path"}
-                  {!isActive && <Plus className="h-4 w-4 ml-2" />}
+                  {isActive ? (
+                    "Deactivate Path"
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 mr-2" />
+                      Activate Path
+                    </>
+                  )}
                 </Button>
 
                 {!isActive && activePaths.length >= 3 && (
@@ -279,6 +346,25 @@ export function Paths() {
           )
         })}
       </div>
+
+      {/* Soul Map Preview */}
+      <Card className="glass-card border-purple-500/30 bg-purple-500/5">
+        <CardHeader>
+          <CardTitle className="text-white font-orbitron">Soul Map Evolution</CardTitle>
+          <p className="text-gray-400 text-sm">Your path choices shape your archetype development</p>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center opacity-50">
+              <Target className="h-16 w-16 text-white" />
+            </div>
+            <p className="text-gray-400">Your soul map will evolve as you progress through your chosen paths</p>
+            <p className="text-xs text-gray-500 mt-2">
+              Archetypes unlock based on path combinations and mastery levels
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
