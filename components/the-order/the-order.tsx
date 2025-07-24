@@ -7,7 +7,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageCircle, Send, Bot, User, Zap, Brain, BookOpen, Target, Eye, Scroll, Loader2 } from "lucide-react"
+import {
+  MessageCircle,
+  Send,
+  Bot,
+  User,
+  Zap,
+  Brain,
+  BookOpen,
+  Target,
+  Eye,
+  Scroll,
+  Loader2,
+  AlertCircle,
+} from "lucide-react"
 import type { AIMessage, UserProfile } from "@/types/limitless"
 
 interface TheOrderProps {
@@ -43,6 +56,7 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
   const [selectedCategory, setSelectedCategory] = useState<AIMessage["category"]>("guidance")
   const [isLoading, setIsLoading] = useState(false)
   const [localMessages, setLocalMessages] = useState<AIMessage[]>(messages)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Sync with parent messages
@@ -73,6 +87,7 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
     addMessage(inputMessage, selectedCategory)
     setInputMessage("")
     setIsLoading(true)
+    setConnectionError(null)
 
     try {
       // Call the API with user context
@@ -85,16 +100,20 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
           message: inputMessage,
           category: selectedCategory,
           userProfile,
-          userProgress,
+          userProgress: {
+            activePaths: userProgress?.activePaths || [],
+            completedTasks: userProgress?.completedTasks || 0,
+          },
         }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`)
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const data = await response.json()
-      const aiReply = data.reply || "The Order remains silent..."
+      const aiReply = data.reply || "The Order remains silent in contemplation..."
 
       const aiMessage: AIMessage = {
         id: `msg_${Date.now()}_ai`,
@@ -105,15 +124,19 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
       }
 
       setLocalMessages((prev) => [...prev, aiMessage])
+
       // Also update parent state if needed
       setTimeout(() => {
         addMessage(aiReply, selectedCategory)
       }, 100)
     } catch (error) {
       console.error("Failed to fetch AI response:", error)
+      setConnectionError(error instanceof Error ? error.message : "Unknown error occurred")
+
       const errorMessage: AIMessage = {
         id: `msg_${Date.now()}_error`,
-        content: "The Order's voice fades into static... The connection has been severed. Try again, Hunter.",
+        content:
+          "The Order's voice fades into static... The connection wavers, but the wisdom remains. The ancient knowledge flows through alternative channels.",
         type: "assistant",
         timestamp: new Date().toISOString(),
         category: selectedCategory,
@@ -140,6 +163,17 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
     { text: "Reveal hidden knowledge", category: "lore" as const },
   ]
 
+  const handleQuickQuery = (query: (typeof quickQueries)[0]) => {
+    setSelectedCategory(query.category)
+    setInputMessage(query.text)
+    // Auto-send the message
+    setTimeout(() => {
+      if (!isLoading) {
+        handleSendMessage()
+      }
+    }, 100)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -148,6 +182,12 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
           The Order
         </h1>
         <p className="text-purple-300">Your AI mentor and guide through the darkness</p>
+        {connectionError && (
+          <div className="flex items-center justify-center gap-2 text-yellow-400 text-sm">
+            <AlertCircle className="w-4 h-4" />
+            <span>Connection unstable - using backup wisdom channels</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -342,10 +382,7 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
                   key={index}
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSelectedCategory(query.category)
-                    setInputMessage(query.text)
-                  }}
+                  onClick={() => handleQuickQuery(query)}
                   disabled={isLoading}
                   className="w-full justify-start text-xs border-purple-500/30 text-purple-300 hover:bg-purple-600/10"
                 >
@@ -375,9 +412,21 @@ export function TheOrder({ messages = [], addMessage, userProfile, userProgress 
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-xs">
                 <div
-                  className={`w-2 h-2 rounded-full ${isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400"}`}
+                  className={`w-2 h-2 rounded-full ${
+                    connectionError
+                      ? "bg-yellow-400 animate-pulse"
+                      : isLoading
+                        ? "bg-blue-400 animate-pulse"
+                        : "bg-green-400"
+                  }`}
                 ></div>
-                <span className="text-purple-300">{isLoading ? "Channeling wisdom..." : "Connection stable"}</span>
+                <span className="text-purple-300">
+                  {connectionError
+                    ? "Backup channels active"
+                    : isLoading
+                      ? "Channeling wisdom..."
+                      : "Connection stable"}
+                </span>
               </div>
             </CardContent>
           </Card>

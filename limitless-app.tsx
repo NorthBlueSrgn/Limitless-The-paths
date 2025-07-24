@@ -19,7 +19,6 @@ export default function LimitlessApp() {
     attributes,
     soulTraits,
     paths,
-    activePaths,
     dailyTasks,
     storyChapters,
     journalEntries,
@@ -31,13 +30,8 @@ export default function LimitlessApp() {
     addJournalEntry,
     addChronicle,
     addAIMessage,
+    activePaths,
   } = useLimitlessData()
-
-  // Calculate user progress for The Order
-  const userProgress = {
-    activePaths: activePaths.map((path) => path.name),
-    completedTasks: dailyTasks.filter((task) => task.completed).length,
-  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -46,9 +40,8 @@ export default function LimitlessApp() {
           <Dashboard
             userProfile={userProfile}
             attributes={attributes}
-            paths={activePaths}
             dailyTasks={dailyTasks}
-            storyChapters={storyChapters}
+            activePaths={activePaths}
             onCompleteTask={completeTask}
           />
         )
@@ -57,13 +50,13 @@ export default function LimitlessApp() {
       case "paths":
         return <Paths paths={paths} userProfile={userProfile} />
       case "chapter-black":
-        return <ChapterBlack storyChapters={storyChapters} userProfile={userProfile} />
+        return <ChapterBlack chapters={storyChapters} userProfile={userProfile} />
       case "archives":
         return (
           <Archives
             journalEntries={journalEntries}
             chronicles={chronicles}
-            onAddJournalEntry={addJournalEntry}
+            onAddEntry={addJournalEntry}
             onAddChronicle={addChronicle}
           />
         )
@@ -73,7 +66,10 @@ export default function LimitlessApp() {
             messages={aiMessages}
             addMessage={addAIMessage}
             userProfile={userProfile}
-            userProgress={userProgress}
+            userProgress={{
+              activePaths: activePaths.map((p) => p.name),
+              completedTasks: dailyTasks.filter((t) => t.completed).length,
+            }}
           />
         )
       case "labyrinth":
@@ -85,9 +81,8 @@ export default function LimitlessApp() {
           <Dashboard
             userProfile={userProfile}
             attributes={attributes}
-            paths={activePaths}
             dailyTasks={dailyTasks}
-            storyChapters={storyChapters}
+            activePaths={activePaths}
             onCompleteTask={completeTask}
           />
         )
