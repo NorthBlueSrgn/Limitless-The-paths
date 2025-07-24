@@ -25,6 +25,8 @@ export interface Attribute {
   decayRate: number
   lastUpdated: string
   color: string
+  description: string
+  perks: string[]
 }
 
 export interface SoulTrait {
@@ -55,6 +57,9 @@ export interface Path {
   decayRate: number
   lastActivity: string
   archetype: string
+  philosophy: string
+  lore: string
+  color: string
 }
 
 export interface PathReward {
@@ -68,7 +73,7 @@ export interface DailyTask {
   title: string
   description: string
   category: string
-  difficulty: "Easy" | "Medium" | "Hard"
+  difficulty: "Easy" | "Medium" | "Hard" | "Extreme"
   xpReward: number
   attributeRewards: { [key: string]: number }
   pathId?: string
@@ -91,6 +96,14 @@ export interface StoryChapter {
   imageUrl?: string
   tone: "light" | "neutral" | "dark" | "ascension"
   characterMoments: string[]
+  choices?: StoryChoice[]
+}
+
+export interface StoryChoice {
+  id: string
+  text: string
+  consequence: string
+  attributeEffect?: { [key: string]: number }
 }
 
 export interface JournalEntry {
@@ -153,4 +166,24 @@ export interface Chronicle {
   mood: string
   insights: string[]
   orderAnalysis?: string
+}
+
+export interface CodexEntry {
+  id: string
+  title: string
+  category: "Philosophy" | "Tactic" | "Ritual" | "Legend" | "Secret" | "Mental Model"
+  content: string
+  unlocked: boolean
+  requiredRank?: Rank
+  requiredPath?: string
+  rarity: "Common" | "Rare" | "Epic" | "Legendary"
+  imageUrl?: string
+}
+
+export interface AIMessage {
+  id: string
+  content: string
+  type: "user" | "assistant"
+  timestamp: string
+  category?: "guidance" | "story" | "analysis" | "challenge" | "philosophy" | "lore"
 }

@@ -1,14 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Orbitron } from "next/font/google"
+import { Inter, Orbitron } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
-const orbitron = Orbitron({
-  subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-orbitron",
-})
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const orbitron = Orbitron({ subsets: ["latin"], variable: "--font-orbitron" })
 
 export const metadata: Metadata = {
   title: "Limitless: Chapter Black",
@@ -23,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${orbitron.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${orbitron.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>

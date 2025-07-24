@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type {
   UserProfile,
   Attribute,
@@ -9,319 +9,524 @@ import type {
   StoryChapter,
   JournalEntry,
   HunterExam,
-  SoulTrait,
-  DecayMetric,
   Chronicle,
+  CodexEntry,
+  AIMessage,
+  SoulTrait,
 } from "@/types/limitless"
 
-// Mock data with more immersive content
-const mockUserProfile: UserProfile = {
-  id: "hunter_001",
-  username: "The Seeker",
-  email: "seeker@chapterblack.dev",
-  rank: "E",
-  level: 1,
-  totalXP: 0,
-  currentXP: 0,
-  nextRankXP: 3000,
-  joinDate: "2024-01-01",
-  lastActive: new Date().toISOString(),
-  streak: 0,
-  title: "Unranked Hunter",
-  aura: "Dormant",
-}
-
-const mockAttributes: Attribute[] = [
-  {
-    name: "Spiritual",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.1,
-    lastUpdated: new Date().toISOString(),
-    color: "#8B5CF6",
-  },
-  {
-    name: "Physical",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.15,
-    lastUpdated: new Date().toISOString(),
-    color: "#EF4444",
-  },
-  {
-    name: "Health",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.05,
-    lastUpdated: new Date().toISOString(),
-    color: "#10B981",
-  },
-  {
-    name: "Intelligence",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.08,
-    lastUpdated: new Date().toISOString(),
-    color: "#3B82F6",
-  },
-  {
-    name: "Creativity",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.12,
-    lastUpdated: new Date().toISOString(),
-    color: "#F59E0B",
-  },
-  {
-    name: "Resilience",
-    value: 0,
-    maxValue: 100,
-    rank: "E",
-    xpGained: 0,
-    decayRate: 0.06,
-    lastUpdated: new Date().toISOString(),
-    color: "#6B7280",
-  },
-]
-
-const mockSoulTraits: SoulTrait[] = [
-  {
-    id: "strategist",
-    name: "The Strategist",
-    description: "Plans ahead and thinks systematically",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["intelligence_25", "consistency_7days"],
-    effects: ["+10% XP from mental tasks", "Unlock advanced planning tools"],
-    color: "#3B82F6",
-    position: { x: 100, y: 50 },
-  },
-  {
-    id: "ghost",
-    name: "The Ghost",
-    description: "Moves silently and strikes precisely",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["strategist", "predator"],
-    effects: ["Stealth mode for habits", "+15% efficiency"],
-    color: "#6B7280",
-    position: { x: 200, y: 100 },
-  },
-  {
-    id: "predator",
-    name: "The Predator",
-    description: "Hunts goals with relentless focus",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["physical_30", "resilience_25"],
-    effects: ["+20% XP from challenges", "Intimidation aura"],
-    color: "#EF4444",
-    position: { x: 150, y: 150 },
-  },
-  {
-    id: "oracle",
-    name: "The Oracle",
-    description: "Sees patterns and predicts outcomes",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["spiritual_40", "intelligence_35"],
-    effects: ["Future path predictions", "+25% insight XP"],
-    color: "#8B5CF6",
-    position: { x: 50, y: 100 },
-  },
-  {
-    id: "obsidian",
-    name: "The Obsidian",
-    description: "Unbreakable will and diamond focus",
-    unlocked: false,
-    level: 0,
-    prerequisites: ["resilience_50", "streak_30days"],
-    effects: ["Immunity to decay", "+30% all XP"],
-    color: "#1F2937",
-    position: { x: 125, y: 200 },
-  },
-]
-
-const mockDailyTasks: DailyTask[] = [
-  {
-    id: "task_001",
-    title: "Morning Meditation",
-    description: "Begin your day with 10 minutes of focused meditation",
-    category: "Spiritual",
-    difficulty: "Easy",
-    xpReward: 50,
-    attributeRewards: { Spiritual: 10, Resilience: 5 },
-    completed: false,
-    timeEstimate: 10,
-    type: "daily",
-  },
-  {
-    id: "task_002",
-    title: "Strategic Reading",
-    description: "Read 20 pages of a challenging book",
-    category: "Intelligence",
-    difficulty: "Medium",
-    xpReward: 75,
-    attributeRewards: { Intelligence: 15, Creativity: 5 },
-    completed: false,
-    timeEstimate: 30,
-    type: "daily",
-  },
-  {
-    id: "task_003",
-    title: "Physical Training",
-    description: "Complete a 30-minute workout session",
-    category: "Physical",
-    difficulty: "Medium",
-    xpReward: 100,
-    attributeRewards: { Physical: 20, Health: 10 },
-    completed: false,
-    timeEstimate: 30,
-    type: "daily",
-  },
-]
-
 export function useLimitlessData() {
-  const [userProfile, setUserProfile] = useState<UserProfile>(mockUserProfile)
-  const [attributes, setAttributes] = useState<Attribute[]>(mockAttributes)
-  const [soulTraits, setSoulTraits] = useState<SoulTrait[]>(mockSoulTraits)
-  const [activePaths, setActivePaths] = useState<Path[]>([])
-  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(mockDailyTasks)
-  const [storyChapters, setStoryChapters] = useState<StoryChapter[]>([])
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
-  const [hunterExams, setHunterExams] = useState<HunterExam[]>([])
-  const [decayMetrics, setDecayMetrics] = useState<DecayMetric[]>([])
-  const [chronicles, setChronicles] = useState<Chronicle[]>([])
+  // User Profile
+  const [userProfile] = useState<UserProfile>({
+    id: "hunter_001",
+    username: "Shadow Walker",
+    email: "hunter@limitless.com",
+    rank: "B",
+    level: 15,
+    totalXP: 12500,
+    currentXP: 2500,
+    nextRankXP: 5000,
+    joinDate: "2024-01-01",
+    lastActive: new Date().toISOString(),
+    streak: 23,
+    title: "Ascending Hunter",
+    aura: "Obsidian Flame",
+  })
 
-  // Initialize data
-  useEffect(() => {
-    const loadData = async () => {
-      // Mock loading delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+  // Attributes
+  const [attributes] = useState<Attribute[]>([
+    {
+      name: "Spiritual",
+      value: 75,
+      maxValue: 100,
+      rank: "B",
+      xpGained: 150,
+      decayRate: 0.05,
+      lastUpdated: new Date().toISOString(),
+      color: "#8b5cf6",
+      description: "Inner awareness and transcendent understanding",
+      perks: ["Meditation Mastery", "Intuitive Insights", "Emotional Balance"],
+    },
+    {
+      name: "Physical",
+      value: 68,
+      maxValue: 100,
+      rank: "C",
+      xpGained: 120,
+      decayRate: 0.08,
+      lastUpdated: new Date().toISOString(),
+      color: "#ef4444",
+      description: "Bodily strength, endurance, and vitality",
+      perks: ["Enhanced Stamina", "Quick Recovery", "Physical Resilience"],
+    },
+    {
+      name: "Health",
+      value: 82,
+      maxValue: 100,
+      rank: "A",
+      xpGained: 200,
+      decayRate: 0.03,
+      lastUpdated: new Date().toISOString(),
+      color: "#10b981",
+      description: "Overall wellness and life force energy",
+      perks: ["Immune Boost", "Vitality Surge", "Healing Factor"],
+    },
+    {
+      name: "Creativity",
+      value: 71,
+      maxValue: 100,
+      rank: "B",
+      xpGained: 180,
+      decayRate: 0.06,
+      lastUpdated: new Date().toISOString(),
+      color: "#f59e0b",
+      description: "Innovative thinking and artistic expression",
+      perks: ["Creative Flow", "Artistic Vision", "Innovation Spark"],
+    },
+    {
+      name: "Intelligence",
+      value: 85,
+      maxValue: 100,
+      rank: "A",
+      xpGained: 250,
+      decayRate: 0.04,
+      lastUpdated: new Date().toISOString(),
+      color: "#3b82f6",
+      description: "Cognitive ability and analytical thinking",
+      perks: ["Strategic Mind", "Pattern Recognition", "Memory Palace"],
+    },
+    {
+      name: "Resilience",
+      value: 79,
+      maxValue: 100,
+      rank: "B",
+      xpGained: 190,
+      decayRate: 0.02,
+      lastUpdated: new Date().toISOString(),
+      color: "#6366f1",
+      description: "Mental fortitude and stress resistance",
+      perks: ["Unbreakable Will", "Stress Immunity", "Comeback Power"],
+    },
+  ])
 
-      // Set initial story chapter
-      setStoryChapters([
+  // Soul Traits
+  const [soulTraits] = useState<SoulTrait[]>([
+    {
+      id: "obsidian_focus",
+      name: "Obsidian Focus",
+      description: "Unbreakable concentration in chaos",
+      unlocked: true,
+      level: 3,
+      prerequisites: ["intelligence_50"],
+      effects: ["+25% task completion speed", "Immunity to distractions"],
+      color: "#8b5cf6",
+      position: { x: 0, y: -80 },
+    },
+    {
+      id: "phoenix_resilience",
+      name: "Phoenix Resilience",
+      description: "Rise stronger from every setback",
+      unlocked: true,
+      level: 2,
+      prerequisites: ["resilience_60"],
+      effects: ["+50% recovery from failures", "Setback immunity"],
+      color: "#ef4444",
+      position: { x: 69, y: -40 },
+    },
+    {
+      id: "sage_wisdom",
+      name: "Sage Wisdom",
+      description: "Deep understanding of life's patterns",
+      unlocked: false,
+      level: 0,
+      prerequisites: ["spiritual_80", "intelligence_70"],
+      effects: ["Unlock hidden story paths", "Enhanced decision making"],
+      color: "#10b981",
+      position: { x: 69, y: 40 },
+    },
+    {
+      id: "creative_storm",
+      name: "Creative Storm",
+      description: "Unleash torrents of innovative ideas",
+      unlocked: true,
+      level: 1,
+      prerequisites: ["creativity_65"],
+      effects: ["2x creative task rewards", "Inspiration bursts"],
+      color: "#f59e0b",
+      position: { x: 0, y: 80 },
+    },
+    {
+      id: "iron_discipline",
+      name: "Iron Discipline",
+      description: "Unwavering commitment to growth",
+      unlocked: false,
+      level: 0,
+      prerequisites: ["physical_70", "resilience_75"],
+      effects: ["Streak protection", "Discipline multiplier"],
+      color: "#6366f1",
+      position: { x: -69, y: 40 },
+    },
+    {
+      id: "vital_essence",
+      name: "Vital Essence",
+      description: "Radiant life force energy",
+      unlocked: true,
+      level: 2,
+      prerequisites: ["health_75"],
+      effects: ["Health regeneration", "Energy overflow"],
+      color: "#10b981",
+      position: { x: -69, y: -40 },
+    },
+  ])
+
+  // Paths
+  const [paths] = useState<Path[]>([
+    {
+      id: "path_of_mastery",
+      name: "Path of Mastery",
+      description: "The relentless pursuit of excellence in chosen domains",
+      category: "Mental Mastery",
+      difficulty: "Advanced",
+      isActive: true,
+      progress: 65,
+      maxProgress: 100,
+      currentStage: "Deliberate Practice",
+      nextStage: "Performance Optimization",
+      associatedAttributes: ["Intelligence", "Resilience", "Creativity"],
+      rewards: [
+        { type: "Title", value: 1, target: "Master of Craft" },
+        { type: "XP", value: 3500 },
+      ],
+      decayRate: 0.05,
+      lastActivity: new Date().toISOString(),
+      archetype: "The Perfectionist",
+      philosophy:
+        "Excellence is not a skill, it's an attitude. Every repetition is a choice between mediocrity and greatness.",
+      lore: "In the ancient halls of mastery, only those who embrace the pain of discipline can transcend the ordinary.",
+      color: "#8b5cf6",
+    },
+    {
+      id: "path_of_will",
+      name: "Path of Will",
+      description: "Forge unbreakable mental fortitude and discipline",
+      category: "Self Mastery",
+      difficulty: "Master",
+      isActive: true,
+      progress: 45,
+      maxProgress: 100,
+      currentStage: "Mental Resistance",
+      nextStage: "Emotional Regulation",
+      associatedAttributes: ["Resilience", "Spiritual", "Physical"],
+      rewards: [
+        { type: "Title", value: 1, target: "Iron Will" },
+        { type: "XP", value: 5000 },
+      ],
+      decayRate: 0.03,
+      lastActivity: new Date().toISOString(),
+      archetype: "The Unbreakable",
+      philosophy:
+        "The mind is everything. What you think you become. Discipline is the bridge between thought and accomplishment.",
+      lore: "Forged in the crucible of adversity, the will becomes an unbreakable blade that cuts through any obstacle.",
+      color: "#ef4444",
+    },
+    {
+      id: "creative_forge",
+      name: "Creative Forge",
+      description: "Unleash boundless creative potential and artistic vision",
+      category: "Creative Expression",
+      difficulty: "Intermediate",
+      isActive: false,
+      progress: 30,
+      maxProgress: 100,
+      currentStage: "Inspiration Gathering",
+      nextStage: "Creative Flow",
+      associatedAttributes: ["Creativity", "Intelligence", "Spiritual"],
+      rewards: [
+        { type: "Title", value: 1, target: "Visionary Artist" },
+        { type: "XP", value: 2800 },
+      ],
+      decayRate: 0.07,
+      lastActivity: "2024-01-15",
+      archetype: "The Visionary",
+      philosophy: "Creativity is intelligence having fun. True art emerges when technique meets inspiration.",
+      lore: "In the Creative Forge, raw imagination is hammered into works that transcend the mundane world.",
+      color: "#f59e0b",
+    },
+  ])
+
+  // Daily Tasks
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([
+    {
+      id: "task_1",
+      title: "Morning Meditation",
+      description: "20 minutes of focused mindfulness practice",
+      category: "Spiritual",
+      difficulty: "Easy",
+      xpReward: 50,
+      attributeRewards: { Spiritual: 5, Resilience: 2 },
+      pathId: "path_of_will",
+      completed: false,
+      timeEstimate: 20,
+      type: "daily",
+    },
+    {
+      id: "task_2",
+      title: "Strategic Chess Study",
+      description: "Analyze 3 grandmaster games and practice tactics",
+      category: "Intelligence",
+      difficulty: "Medium",
+      xpReward: 75,
+      attributeRewards: { Intelligence: 8, Creativity: 3 },
+      pathId: "path_of_mastery",
+      completed: true,
+      timeEstimate: 45,
+      type: "daily",
+    },
+    {
+      id: "task_3",
+      title: "Physical Training",
+      description: "Full body workout with progressive overload",
+      category: "Physical",
+      difficulty: "Hard",
+      xpReward: 100,
+      attributeRewards: { Physical: 10, Health: 5, Resilience: 3 },
+      completed: false,
+      timeEstimate: 60,
+      type: "daily",
+    },
+    {
+      id: "task_4",
+      title: "Creative Writing",
+      description: "Write 500 words of original fiction",
+      category: "Creativity",
+      difficulty: "Medium",
+      xpReward: 80,
+      attributeRewards: { Creativity: 8, Intelligence: 2 },
+      pathId: "creative_forge",
+      completed: false,
+      timeEstimate: 30,
+      type: "daily",
+    },
+  ])
+
+  // Story Chapters
+  const [storyChapters] = useState<StoryChapter[]>([
+    {
+      id: "chapter_1",
+      title: "The Awakening",
+      content: `The system pulses with dark energy as you stand at the threshold of transformation.
+
+Your reflection stares back from the obsidian mirror—but something has changed. The eyes that once held doubt now burn with purpose. The Order has been watching, waiting for this moment when potential crystallizes into power.
+
+"Welcome, Hunter," a voice echoes from the void. "Your journey into Chapter Black begins now. Every choice you make, every task you complete, every moment of weakness or strength—all of it feeds the narrative of your evolution."
+
+The air crackles with possibility. Your soul map flickers to life, six attributes pulsing like stars in the darkness. This is no ordinary path. This is the forging of legend.
+
+The first trial awaits. Will you rise to meet it, or will you remain forever trapped in the prison of mediocrity?`,
+      chapterNumber: 1,
+      unlocked: true,
+      completed: true,
+      themes: ["Awakening", "Potential", "Choice"],
+      requiredTaskCompletion: 0,
+      rewards: [{ type: "XP", value: 200 }],
+      tone: "ascension",
+      characterMoments: ["First glimpse of The Order", "Soul map activation", "Recognition of inner power"],
+    },
+    {
+      id: "chapter_2",
+      title: "The First Trial",
+      content: `Three days have passed since your awakening. The Order observes your every move, cataloging your choices, measuring your resolve.
+
+"Consistency," the voice whispers, "is the blade that cuts through the veil of impossibility."
+
+Your meditation practice has begun to bear fruit. In the stillness, you sense something stirring—a presence that has always been there, waiting. Your chess studies reveal patterns within patterns, strategies that extend far beyond the board.
+
+But the path is treacherous. Each completed task strengthens the light within, while every failure feeds the shadows that seek to drag you back to the ordinary world.
+
+The Hunter Exam looms on the horizon. Your current rank of B is merely a stepping stone. The Order has seen potential in you that even you don't yet recognize.
+
+"Power," it says, "is not given. It is taken by those brave enough to seize it."`,
+      chapterNumber: 2,
+      unlocked: true,
+      completed: false,
+      themes: ["Discipline", "Growth", "Recognition"],
+      requiredTaskCompletion: 60,
+      rewards: [{ type: "XP", value: 300 }],
+      tone: "neutral",
+      characterMoments: ["Meditation breakthrough", "Strategic insight gained", "The Order's first test"],
+    },
+  ])
+
+  // Journal Entries
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([
+    {
+      id: "entry_1",
+      title: "The Moment Everything Changed",
+      content:
+        "Today I realized that I've been living in the shadows of my own potential. The system activated something in me—a hunger for growth that I've never felt before. Every task completed feels like a step toward becoming who I'm meant to be.",
+      date: "2024-01-20",
+      mood: ["Determined", "Inspired"],
+      tags: ["breakthrough", "awakening", "potential"],
+      season: "Winter of Preparation",
+      type: "Breakthrough",
+      linkedPaths: ["path_of_mastery"],
+      xpGained: 50,
+      storyImpact: "Influenced the tone of Chapter 2 toward ascension",
+    },
+    {
+      id: "entry_2",
+      title: "Struggling with Consistency",
+      content:
+        "Missed my meditation practice yesterday. The Order's voice seems quieter today, disappointed perhaps. I can feel the decay creeping in, the old patterns trying to reassert themselves. But I won't let them win. Tomorrow is a new chance to prove my dedication.",
+      date: "2024-01-18",
+      mood: ["Frustrated", "Reflective"],
+      tags: ["setback", "consistency", "determination"],
+      season: "Winter of Preparation",
+      type: "Setback",
+      linkedPaths: ["path_of_will"],
+      xpGained: 25,
+      storyImpact: "Added struggle elements to current chapter",
+    },
+  ])
+
+  // Hunter Exams
+  const [hunterExams] = useState<HunterExam[]>([
+    {
+      id: "exam_a_rank",
+      name: "The Fourth Gate",
+      description: "Ascension to Rank A requires mastery of mind, body, and spirit",
+      targetRank: "A",
+      phases: [
         {
-          id: "chapter_001",
-          title: "The Awakening",
-          content: `The room is silent. White walls stretch endlessly, unmarked by time or memory. You stand at the threshold of something greater than yourself.
-
-Hunter designation: ${mockUserProfile.id}. Rank: E. Status: Unproven.
-
-In this place, potential means nothing without action. Every choice you make will be recorded, analyzed, perfected. The system watches. The system learns. The system evolves you.
-
-Your first test begins now. Will you rise to meet it, or will you remain another forgotten soul in the archives of mediocrity?
-
-The choice, as always, is yours.`,
-          chapterNumber: 1,
-          unlocked: true,
+          id: "phase_1",
+          name: "Endurance Trial",
+          type: "Endurance",
+          description: "Complete all daily tasks for 7 consecutive days",
+          requirements: ["100% task completion", "No streak breaks", "Maintain all attributes above 70"],
+          timeLimit: 10080, // 7 days in minutes
           completed: false,
-          themes: ["awakening", "potential", "choice"],
-          requiredTaskCompletion: 60,
-          rewards: [{ type: "XP", value: 100 }],
-          tone: "neutral",
-          characterMoments: ["First system interaction", "Rank E designation"],
         },
-      ])
-
-      // Set initial hunter exam
-      setHunterExams([
         {
-          id: "exam_001",
-          name: "The First Gate",
-          description: "Prove your dedication and unlock the path to Rank D",
-          targetRank: "D",
-          phases: [
-            {
-              id: "phase_001",
-              name: "Foundation of Will",
-              type: "Endurance",
-              description: "Complete all daily tasks for 7 consecutive days",
-              requirements: ["daily_tasks_completion", "streak_7days", "no_decay"],
-              completed: false,
-            },
-            {
-              id: "phase_002",
-              name: "Mind Over Matter",
-              type: "Challenge",
-              description: "Demonstrate mental resilience through focused challenges",
-              requirements: ["meditation_streak", "reading_goals", "reflection_depth"],
-              completed: false,
-            },
-            {
-              id: "phase_003",
-              name: "The Crucible",
-              type: "Task",
-              description: "Face a personalized trial based on your chosen paths",
-              requirements: ["path_mastery", "attribute_threshold", "story_engagement"],
-              completed: false,
-            },
-          ],
-          rewards: [
-            { type: "XP", value: 500 },
-            { type: "Title", value: 1, target: "Proven Hunter" },
-            { type: "Trait", value: 1, target: "Iron Will" },
-          ],
-          unlocked: false,
+          id: "phase_2",
+          name: "Mental Fortress",
+          type: "Challenge",
+          description: "Demonstrate unbreakable focus under pressure",
+          requirements: ["Complete 3 high-difficulty tasks", "Maintain meditation streak", "Strategic thinking test"],
+          timeLimit: 180,
           completed: false,
-          attempts: 0,
-          bestScore: 0,
-          duration: 7,
-          intensity: "Standard",
         },
-      ])
-    }
+        {
+          id: "phase_3",
+          name: "Soul Integration",
+          type: "Reflection",
+          description: "Write a comprehensive reflection on your transformation",
+          requirements: ["1000+ word reflection", "Identify 3 major breakthroughs", "Set future goals"],
+          completed: false,
+        },
+      ],
+      rewards: [
+        { type: "Title", value: 1, target: "Elite Hunter" },
+        { type: "XP", value: 5000 },
+      ],
+      unlocked: true,
+      completed: false,
+      attempts: 0,
+      bestScore: 0,
+      duration: 7,
+      intensity: "Intense",
+    },
+  ])
 
-    loadData()
-  }, [])
+  // Chronicles
+  const [chronicles, setChronicles] = useState<Chronicle[]>([
+    {
+      id: "chronicle_1",
+      title: "The Order's First Message",
+      content:
+        "I am The Order. I have observed countless souls traverse the path from mediocrity to transcendence. You stand at the beginning, Hunter. Your potential is vast, but potential without action is merely a beautiful lie.",
+      date: "2024-01-15",
+      type: "Story Response",
+      mood: "Mysterious",
+      insights: ["Potential requires action", "The Order is always watching", "Transformation is possible"],
+    },
+    {
+      id: "chronicle_2",
+      title: "Meditation Breakthrough",
+      content:
+        "In the silence between thoughts, I found something extraordinary. A presence, ancient and knowing, that has been waiting for me to quiet the noise of the world. This is what they call the inner voice—not imagination, but recognition.",
+      date: "2024-01-19",
+      type: "Mindset Shift",
+      linkedChapter: "chapter_2",
+      mood: "Transcendent",
+      insights: ["Inner wisdom exists", "Silence reveals truth", "Recognition vs imagination"],
+    },
+  ])
 
+  // Codex Entries
+  const [codexEntries] = useState<CodexEntry[]>([
+    {
+      id: "codex_1",
+      title: "The Law of Compound Growth",
+      category: "Philosophy",
+      content:
+        "Small, consistent actions compound exponentially over time. A 1% improvement daily results in 37x growth over a year. The Order teaches that transformation is not about dramatic gestures, but about the relentless accumulation of marginal gains.",
+      unlocked: true,
+      rarity: "Common",
+    },
+    {
+      id: "codex_2",
+      title: "The Obsidian Mirror Technique",
+      category: "Ritual",
+      content:
+        "Stand before a mirror in complete darkness. Light a single candle. Stare into your own eyes for 10 minutes without breaking contact. In the depths of your gaze, you will see not who you are, but who you could become. This ritual reveals the gap between current self and potential self.",
+      unlocked: true,
+      requiredRank: "C",
+      rarity: "Rare",
+    },
+    {
+      id: "codex_3",
+      title: "Miyamoto Musashi: The Way of Strategy",
+      category: "Legend",
+      content:
+        "The legendary swordsman who never lost a duel. Musashi understood that true mastery comes from the integration of technique, strategy, and spirit. His Book of Five Rings teaches that the way of the warrior extends far beyond combat—it is a philosophy of life itself.",
+      unlocked: false,
+      requiredRank: "B",
+      requiredPath: "path_of_mastery",
+      rarity: "Epic",
+    },
+    {
+      id: "codex_4",
+      title: "The Phoenix Protocol",
+      category: "Secret",
+      content:
+        "When all seems lost, when failure threatens to consume you, activate the Phoenix Protocol. Embrace the destruction completely. Let the old self burn away entirely. From the ashes, a stronger version will emerge. This is not recovery—this is rebirth.",
+      unlocked: false,
+      requiredRank: "A",
+      rarity: "Legendary",
+    },
+  ])
+
+  // AI Messages
+  const [aiMessages, setAIMessages] = useState<AIMessage[]>([
+    {
+      id: "msg_1",
+      content:
+        "I am The Order. I have observed countless souls traverse the path from mediocrity to transcendence. You stand at the beginning, Hunter. Your potential is vast, but potential without action is merely a beautiful lie.",
+      type: "assistant",
+      timestamp: new Date().toISOString(),
+      category: "philosophy",
+    },
+  ])
+
+  // Functions
   const completeTask = (taskId: string) => {
     setDailyTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, completed: true } : task)))
-
-    // Update XP and attributes
-    const task = dailyTasks.find((t) => t.id === taskId)
-    if (task) {
-      setUserProfile((prev) => ({
-        ...prev,
-        currentXP: prev.currentXP + task.xpReward,
-        totalXP: prev.totalXP + task.xpReward,
-      }))
-
-      // Update attributes
-      Object.entries(task.attributeRewards).forEach(([attrName, xp]) => {
-        setAttributes((prev) =>
-          prev.map((attr) =>
-            attr.name === attrName
-              ? { ...attr, value: Math.min(attr.value + xp, attr.maxValue), xpGained: attr.xpGained + xp }
-              : attr,
-          ),
-        )
-      })
-
-      // Check for rank up
-      const completedTasks = dailyTasks.filter((t) => t.completed).length + 1
-      const totalTasks = dailyTasks.length
-      if (completedTasks === totalTasks) {
-        // Unlock next chapter or exam
-        console.log("All tasks completed! Story progression unlocked.")
-      }
-    }
   }
 
   const addJournalEntry = (entry: Omit<JournalEntry, "id">) => {
     const newEntry: JournalEntry = {
       ...entry,
-      id: `journal_${Date.now()}`,
+      id: `entry_${Date.now()}`,
     }
     setJournalEntries((prev) => [newEntry, ...prev])
   }
@@ -334,28 +539,65 @@ The choice, as always, is yours.`,
     setChronicles((prev) => [newChronicle, ...prev])
   }
 
-  const updateSoulTrait = (traitId: string, updates: Partial<SoulTrait>) => {
-    setSoulTraits((prev) => prev.map((trait) => (trait.id === traitId ? { ...trait, ...updates } : trait)))
+  const addAIMessage = (content: string, category?: AIMessage["category"]) => {
+    const userMessage: AIMessage = {
+      id: `msg_${Date.now()}_user`,
+      content,
+      type: "user",
+      timestamp: new Date().toISOString(),
+      category,
+    }
+
+    setAIMessages((prev) => [...prev, userMessage])
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: AIMessage = {
+        id: `msg_${Date.now()}_ai`,
+        content: generateAIResponse(content, category),
+        type: "assistant",
+        timestamp: new Date().toISOString(),
+        category,
+      }
+      setAIMessages((prev) => [...prev, aiResponse])
+    }, 1500)
+  }
+
+  const generateAIResponse = (userMessage: string, category?: string): string => {
+    const responses = {
+      guidance:
+        "Your path is clear, Hunter. Focus on consistency over intensity. The small actions you take daily are the building blocks of your transformation.",
+      story:
+        "Your recent actions have influenced the narrative. The story adapts to your choices—continue on this path and witness how your dedication shapes your legend.",
+      analysis:
+        "I observe patterns in your behavior. Your strengths lie in strategic thinking, but your consistency needs improvement. Focus on building unbreakable habits.",
+      challenge:
+        "I challenge you to complete every task for the next 3 days without exception. Prove to yourself that you have the discipline to transcend your current limitations.",
+      philosophy:
+        "Remember this truth: You are not managing tasks—you are forging a soul. Every choice is a chisel strike in the sculpture of your becoming.",
+      lore: "In the ancient texts, it is written that those who master themselves master the world. Your journey follows the same path walked by legends.",
+    }
+
+    return responses[category as keyof typeof responses] || responses.guidance
   }
 
   return {
     userProfile,
     attributes,
     soulTraits,
-    activePaths,
+    paths,
     dailyTasks,
     storyChapters,
     journalEntries,
     hunterExams,
-    decayMetrics,
     chronicles,
+    codexEntries,
+    aiMessages,
     completeTask,
     addJournalEntry,
     addChronicle,
-    updateSoulTrait,
-    setUserProfile,
-    setAttributes,
-    setActivePaths,
-    setDailyTasks,
+    addAIMessage,
+    activePaths: paths.filter((p) => p.isActive),
+    decayMetrics: [] as any[], // Placeholder for decay metrics
   }
 }
